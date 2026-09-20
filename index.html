@@ -16,10 +16,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<!-- Die Zahl hinter ?v= MUSS bei jeder Aenderung an der ui.css hochgezaehlt
-     werden. Sonst holen Browser und Service Worker die alte Datei aus dem
-     Zwischenspeicher und die neuen Regeln kommen nie an. -->
-<link rel="stylesheet" href="ui.css?v=93">
+<!-- Zwei Stilblaetter, in dieser Reihenfolge: app.css ist der fruehere
+     <style>-Block aus der einen grossen Datei, ui.css liegt darueber und
+     ueberschreibt gezielt. Die Zahl hinter ?v= MUSS bei jeder Aenderung
+     hochgezaehlt werden, sonst holen Browser und Service Worker die alte
+     Fassung aus dem Zwischenspeicher. -->
+<link rel="stylesheet" href="css/app.css?v=4">
+<link rel="stylesheet" href="css/ui.css?v=4">
 </head>
 <body>
 
@@ -203,10 +206,10 @@ document.getElementById("tabMehr").onclick = () => document.getElementById("burg
 <script src="js/13-provisionsrechner.js?v=1"></script>
 <script src="js/14-provisionswunsch.js?v=1"></script>
 <script src="js/15-auswertungen.js?v=1"></script>
-<script src="js/16-cloud-konto.js?v=2"></script>
-<script src="js/17-anmeldung.js?v=1"></script>
+<script src="js/16-cloud-konto.js?v=3"></script>
+<script src="js/17-anmeldung.js?v=3"></script>
 <script src="js/18-teamansicht.js?v=1"></script>
-<script src="js/19-profil.js?v=1"></script>
+<script src="js/19-profil.js?v=3"></script>
 <script src="js/20-wochenmeldung.js?v=1"></script>
 <script src="js/21-adresse.js?v=1"></script>
 <script src="js/22-inventur.js?v=1"></script>
