@@ -1,5 +1,18 @@
-/* ================= Konto, Team, Cloud ================= */
-/* ▼▼▼ Firebase: hier die Zugangsdaten aus der Firebase-Konsole eintragen ▼▼▼ */
+/* ================= Konto, Team, Cloud =================
+   Fassung 2 – Abgleich zwischen Geräten.
+
+   Neu gegenüber der ersten Fassung:
+   1. Die App hört zu. Ändert ein zweites Gerät den eigenen Datensatz, kommt
+      das hier an und wird mit dem lokalen Stand gemischt – ohne Neuladen.
+   2. Schreibvorgänge gehen nicht mehr verloren. Was nicht durchkommt, landet
+      in einer Warteschlange, überlebt einen Neustart und wird mit wachsendem
+      Abstand erneut versucht.
+   3. Zeitstempel kommen von der Serveruhr. Geht ein Gerät vor oder nach,
+      gewinnt sonst beim Mischen der falsche Stand.
+
+   Mischlogik, Papierkorb, Rollen und lokaler Speicher sind unverändert aus
+   der geprüften Fassung übernommen.                                        */
+
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAqTQoE4qKzjZ1ef2No33guv40qZVZLCUQ",
   authDomain: "businessplan-digital.firebaseapp.com",
@@ -9,7 +22,6 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "813567632305",
   appId: "1:813567632305:web:a55102ceccc82a4ad7d390"
 };
-/* ▲▲▲ Bleibt das leer, läuft alles nur lokal im Browser ▲▲▲ */
 
 /* Adresse des Kalender-Workers – einmal eintragen, ohne Schrägstrich am Ende */
 const KALENDER_BASIS = "https://bunte-woche-kalender.aurorabrosen.workers.dev";
@@ -67,9 +79,22 @@ async function userSet(u, entferne){
   const all = localUsers(); all[u.dk] = u; store.set('bw-users', all);
 }
 
+/* ---------- Serveruhr ----------
+   Firebase verrät, wie weit die Geräteuhr danebenliegt. Jeder Zeitstempel,
+   an dem das Mischen hängt, läuft ab jetzt über serverJetzt() statt Date.now(). */
+let uhrVersatz = 0;
+if(db){
+  try{
+    db.ref('.info/serverTimeOffset').on('value', s=>{
+      const v = +s.val(); if(isFinite(v)) uhrVersatz = v;
+    });
+  }catch(e){}
+}
+function serverJetzt(){ return Date.now() + uhrVersatz; }
+
 /* Alle Daten eines Benutzers als ein Paket */
 function dataBlob(){
-  return {entries, potenzial, empfehlungen, wiedervorlagen, papierkorb, nachtrag, verlauf, archiv, einkaeufe, inventur, settings, wunsch, fahrten, jobtickets, teamumsatz, ts:Date.now()};
+  return {entries, potenzial, empfehlungen, wiedervorlagen, papierkorb, nachtrag, verlauf, archiv, einkaeufe, inventur, settings, wunsch, fahrten, jobtickets, teamumsatz, ts:serverJetzt()};
 }
 function applyData(d){
   Object.keys(entries).forEach(k=>delete entries[k]);
@@ -77,7 +102,7 @@ function applyData(d){
   potenzial.length = 0; ((d && d.potenzial) || []).forEach(x=>potenzial.push(x));
   empfehlungen.length = 0; ((d && d.empfehlungen) || []).forEach(x=>empfehlungen.push(x));
   wiedervorlagen.length = 0; ((d && d.wiedervorlagen) || []).forEach(x=>wiedervorlagen.push(x));
-  const grenze = Date.now() - 30*86400000;
+  const grenze = serverJetzt() - 30*86400000;
   papierkorb.length = 0; ((d && d.papierkorb) || []).filter(x=>x.weg > grenze).forEach(x=>papierkorb.push(x));
   verlauf.length = 0;   ((d && d.verlauf)   || []).forEach(x=>verlauf.push(x));
   archiv.length = 0;    ((d && d.archiv)    || []).forEach(x=>archiv.push(x));
@@ -169,6 +194,7 @@ async function loadData(dk, fremd){
     const s = await db.ref('data/'+dk).once('value');
     if(!fremd) cloudOk = true;
     const wolke = s.val();
+    if(!fremd) liveStart(dk);                                 // ab hier wird mitgehört
     if(!wolke) return lokal;                                  // in der Cloud noch nichts
     if(!lokal)  return wolke;
     return mische(wolke, lokal);                              // neuerer Stand gewinnt, Lücken werden gefüllt
@@ -198,21 +224,84 @@ function clean(v){
 }
 let saveTimer = null, dataReady = false, cloudOk = false, shadow = {};
 let letzterFehler = "";
-function saveState(text, warn){
-  const el = document.getElementById('saveState');
-  if(!el) return;
-  el.textContent = text;
-  el.classList.toggle('warn', !!warn);
-  el.title = letzterFehler || text;
-}
 const gleich = (a,b) => JSON.stringify(a) === JSON.stringify(b);
-/* Schreibt nur, was sich seit dem letzten Speichern geändert hat */
 function fehlerkurz(err){
   const c = (err && (err.code || err.message)) || "";
   if(/PERMISSION_DENIED|permission/i.test(c)) return "kein Schreibrecht – Firebase-Regeln prüfen";
   if(/network|offline|unavailable/i.test(c))  return "offline";
   return String(c).slice(0,60);
 }
+
+/* ---------- Warteschlange ----------
+   "warteOffen" sammelt alle Pfade, die noch in die Cloud müssen. Der Inhalt liegt
+   auch im lokalen Speicher, damit nichts verschwindet, wenn jemand die App
+   im Funkloch schließt. */
+let warteOffen = {}, schreibtGerade = false, warteTimer = null, warteStufe = 0, verbunden = true, letzterBlob = null;
+const WARTE = [2000, 5000, 15000, 30000, 60000, 120000];
+const warteSchluessel = () => 'bw-queue-' + (me ? me.dk : "?");
+function warteLaden(){
+  if(!me) return;
+  const w = store.get(warteSchluessel());
+  if(w && typeof w === "object" && !Array.isArray(w)) warteOffen = w;
+  if(warteZahl()) schreibe();
+}
+function warteSichern(){
+  if(!me) return;
+  if(warteZahl()) store.set(warteSchluessel(), warteOffen);
+  else store.del(warteSchluessel());
+}
+function warteZahl(){ return Object.keys(warteOffen).length; }
+
+function saveState(text, warn){
+  const el = document.getElementById('saveState');
+  if(!el) return;
+  const n = warteZahl();
+  let t = text;
+  if(n && !/speichert/.test(t)) t = (n === 1 ? "1 Änderung wartet" : n + " Änderungen warten");
+  el.textContent = t;
+  el.classList.toggle('warn', !!warn || !!n);
+  el.title = letzterFehler || t;
+}
+
+function schreibe(){
+  if(!db || !me || schreibtGerade) return;
+  clearTimeout(warteTimer);
+  const paket = {...warteOffen};
+  const keys = Object.keys(paket);
+  if(!keys.length){ saveState(verbunden ? "gespeichert" : "offline · gesichert", !verbunden); return; }
+  schreibtGerade = true;
+  saveState("speichert …");
+  db.ref().update(paket)
+    .then(()=>{
+      /* nur wegnehmen, was seit dem Absenden nicht erneut geändert wurde */
+      keys.forEach(k=>{ if(gleich(warteOffen[k], paket[k])) delete warteOffen[k]; });
+      warteSichern();
+      schreibtGerade = false; cloudOk = true; letzterFehler = ""; warteStufe = 0;
+      if(letzterBlob) shadow = JSON.parse(JSON.stringify(letzterBlob));
+      if(warteZahl()) schreibe();                 // in der Zwischenzeit kam Neues dazu
+      else saveState("gespeichert");
+    })
+    .catch(err=>{
+      schreibtGerade = false; cloudOk = false;
+      letzterFehler = (err && err.message) || "";
+      warteSichern();
+      const abstand = WARTE[Math.min(warteStufe++, WARTE.length-1)];
+      saveState("nicht gesichert · "+fehlerkurz(err), true);
+      warteTimer = setTimeout(schreibe, abstand);  // es wird weiter versucht
+    });
+}
+/* Verbindung beobachten: kommt das Netz zurück, wird sofort nachgereicht */
+if(db){
+  try{
+    db.ref('.info/connected').on('value', s=>{
+      verbunden = !!s.val();
+      if(verbunden){ warteStufe = 0; schreibe(); }
+      else saveState("offline", true);
+    });
+  }catch(e){}
+}
+addEventListener('online', ()=>{ warteStufe = 0; schreibe(); });
+
 function flushSave(){
   if(!me || !dataReady) return;
   if(fremdAktiv){                                     // Notbremse: niemals fremde Daten unter eigener DK ablegen
@@ -227,7 +316,7 @@ function flushSave(){
   const basis = 'data/'+zielDk+'/';
   const updates = {};
   const neuE = blob.entries || {}, altE = shadow.entries || {};
-  const stempel = Date.now();
+  const stempel = serverJetzt();
   Object.keys(neuE).forEach(k=>{
     if(gleich(neuE[k], altE[k])) return;
     neuE[k] = {...neuE[k], mts: stempel};          // wann dieser Termin zuletzt geändert wurde
@@ -238,13 +327,62 @@ function flushSave(){
   ["potenzial","empfehlungen","wiedervorlagen","papierkorb","nachtrag","verlauf","archiv","einkaeufe","inventur","settings","wunsch","fahrten","jobtickets","teamumsatz"].forEach(f=>{
     if(!gleich(blob[f], shadow[f])) updates[basis+f] = (blob[f] === undefined ? null : blob[f]);
   });
-  if(!Object.keys(updates).length){ saveState("gespeichert"); return; }
-  updates[basis+'ts'] = blob.ts;
+  if(Object.keys(updates).length){
+    updates[basis+'ts'] = blob.ts;
+    eigenerTs = blob.ts;                            // daran wird das eigene Echo erkannt
+    letzterBlob = blob;
+    Object.assign(warteOffen, updates);
+    warteSichern();
+  }
+  schreibe();
+}
 
-  saveState("speichert …");
-  db.ref().update(updates)
-    .then(()=>{ shadow = JSON.parse(JSON.stringify(blob)); cloudOk = true; saveState("gespeichert"); })
-    .catch(err=>{ cloudOk = false; letzterFehler = (err&&err.message)||""; saveState("nur lokal · "+fehlerkurz(err), true); });   // nächster Versuch läuft wieder
+/* ---------- Mithören ----------
+   Ändert ein zweites Gerät etwas, kommt der neue Stand hier an und wird mit
+   dem eigenen gemischt, nie übergestülpt. Läuft gerade ein Dialog oder wartet
+   noch etwas in der Warteschlange, wird abgewartet. */
+let liveRef = null, liveDk = null, liveWartet = null, liveTimer = null, eigenerTs = 0;
+function liveStart(dk){
+  if(!db || !dk) return;
+  if(liveDk === dk && liveRef) return;
+  liveStop();
+  liveDk = dk;
+  warteLaden();                                        // Reste aus der letzten Sitzung nachreichen
+  try{
+    liveRef = db.ref('data/'+dk);
+    liveRef.on('value', s=>{
+      if(!dataReady || fremdAktiv) return;
+      const wolke = s.val();
+      if(!wolke) return;
+      if(+wolke.ts && +wolke.ts === eigenerTs) return;   // das eigene Echo
+      if(warteZahl() || schreibtGerade) return;          // erst das Eigene sichern
+      liveWartet = wolke;
+      liveAnwenden();
+    }, err=>{ console.warn("Mithoeren nicht moeglich:", err && err.message); });
+  }catch(e){ liveRef = null; }
+}
+function liveAnwenden(){
+  if(!liveWartet) return;
+  const modal = document.getElementById('modal');
+  if(modal && modal.classList.contains('open')){
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(liveAnwenden, 1500);          // nicht mitten in eine Eingabe platzen
+    return;
+  }
+  const wolke = liveWartet; liveWartet = null;
+  try{
+    const zusammen = mische(wolke, clean(dataBlob()));
+    applyData(zusammen);
+    shadow = JSON.parse(JSON.stringify(clean(wolke)));   // das steht jetzt in der Cloud
+    if(typeof renderAll === "function") renderAll();     // schreibt selbst zurueck, was nur lokal war
+    saveState("vom anderen Gerät übernommen");
+    setTimeout(()=>{ if(!warteZahl()) saveState("gespeichert"); }, 2500);
+  }catch(e){ console.error("Abgleich fehlgeschlagen:", e); }
+}
+function liveStop(){
+  if(liveRef){ try{ liveRef.off(); }catch(e){} }
+  liveRef = null; liveDk = null; liveWartet = null;
+  clearTimeout(liveTimer);
 }
 var fremdAktiv = false;        // solange true, liegen fremde Daten im Speicher - es wird nichts geschrieben
 /* E40: ein sehr kurzer Impuls bestätigt, dass etwas gezählt oder gesichert wurde */
@@ -262,5 +400,6 @@ function saveData(){
 addEventListener('pagehide', ()=>{ clearTimeout(saveTimer); flushSave(); if(me) store.set('bw-lastseen', Date.now()); });
 document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState === "hidden"){ clearTimeout(saveTimer); flushSave(); }
+  else { warteStufe = 0; schreibe(); }                 // zurueck aus dem Hintergrund
 });
 
