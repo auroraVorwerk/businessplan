@@ -2,13 +2,17 @@
    VERSION bei jedem Hochladen um eins erhöhen. Der Rest läuft von allein:
    das Gerüst kommt sofort aus dem Zwischenspeicher und wird im Hintergrund
    erneuert, die Daten holt immer Firebase. */
-const VERSION = "dbp-v4";
+const VERSION = "dbp-v10";
 const DATEIEN = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./css/app.css?v=4",
-  "./css/ui.css?v=4",
+  "./css/app.css?v=8",
+  "./css/ui.css?v=8",
+  "./css/theme.css?v=8",
+  "./css/planer.css?v=8",
+  "./css/extras.css?v=10",
+  "./css/design.css?v=10",
   "./js/01-konstanten.js",
   "./js/02-datum.js",
   "./js/03-daten.js",
@@ -17,11 +21,11 @@ const DATEIEN = [
   "./js/06-nachbereitung.js",
   "./js/07-potenzial.js",
   "./js/08-wiedervorlage.js",
-  "./js/09-dialogschritte.js",
+  "./js/09-dialogschritte.js?v=8",
   "./js/10-statistik.js",
   "./js/11-druck.js",
   "./js/12-vertriebsmonat-provision.js",
-  "./js/13-provisionsrechner.js",
+  "./js/13-provisionsrechner.js?v=8",
   "./js/14-provisionswunsch.js",
   "./js/15-auswertungen.js",
   "./js/16-cloud-konto.js?v=3",
@@ -36,11 +40,18 @@ const DATEIEN = [
   "./js/25-fahrtenbuch.js",
   "./js/26-kundenliste.js",
   "./js/27-abgleich-menue.js",
-  "./js/28-heute.js",
+  "./js/28-heute.js?v=5",
   "./js/29-jahresrueckblick.js",
   "./js/30-zaehlen.js",
   "./js/31-hilfe.js",
-  "./js/32-start.js"
+  "./js/32-start.js",
+  "./js/33-planer.js?v=8",
+  "./js/34-messe.js?v=8",
+  "./js/35-wochenmeldung.js?v=8",
+  "./js/36-heute.js?v=8",
+  "./js/37-inventur.js?v=8",
+  "./js/38-team.js?v=10",
+  "./js/39-rest.js?v=10"
 ];
 
 self.addEventListener("install", ev=>{
