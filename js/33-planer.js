@@ -19,6 +19,9 @@ let gpKlassen = null;                  // die Klassen, die #grid von Anfang an h
 const GP_OBEN = 23;                    // oberer Rand der Zeitachse
 const GP_UNTEN = Math.min(...HOURS_ASC);
 const gpBreit = () => matchMedia("(min-width: 760px)").matches;
+/* Richtung der Zeitachse: Standard spät oben, umschaltbar auf früh oben */
+const gpFrueh = () => settings.planerRichtung === "frueh";
+const gpStunden = () => gpFrueh() ? HOURS_ASC : START_HOURS;
 
 /* Alle Termine eines Tages als Blöcke mit echter Zeit */
 function gpBloecke(day){
@@ -93,7 +96,7 @@ function gpSpalte(d, iTag, heute){
   });
 
   let rows = "";
-  START_HOURS.forEach((hr,idx)=>{
+  gpStunden().forEach((hr,idx)=>{
     const alt = idx % 2 ? " row-alt" : "";
     const b = belegt.get(hr);
     const weich = b && (b.e.kind === "privat" || b.e.kind === "individuell");
@@ -109,7 +112,7 @@ function gpSpalte(d, iTag, heute){
   let bl = "";
   bloecke.forEach(b=>{
     const e = b.e;
-    const oben = (GP_OBEN - b.bis) * 100 / (GP_OBEN - GP_UNTEN);
+    const oben = (gpFrueh() ? (b.von - GP_UNTEN) : (GP_OBEN - b.bis)) * 100 / (GP_OBEN - GP_UNTEN);
     const hoch = (b.bis - b.von) * 100 / (GP_OBEN - GP_UNTEN);
     const breite = 100 / (b.spuren || 1);
     const links = (b.spur || 0) * breite;
@@ -166,7 +169,7 @@ function gpRender(){
 
   /* Zeitleiste */
   let rail = `<div class="gprail">`;
-  START_HOURS.forEach(hr=>{
+  gpStunden().forEach(hr=>{
     rail += `<div class="gprz"><b>${pad(hr)}</b><i>–${pad(hr+2)}</i></div>`;
   });
   rail += `</div>`;
@@ -182,13 +185,16 @@ function gpRender(){
   let mrows = "";
   METRICS.forEach(m=>{
     const txt = `<span class="klang">${m.n}</span><span class="kkurz">${m.kurz||m.n}</span>`;
-    const lbl = m.click ? `<button class="mlbl" data-mclick="${m.click}">${txt}</button>` : txt;
+    const lbl = txt;
     const ampel = (m.k==="fg" || m.k==="wg") ? ampelPunkt(istM[m.k], zielM[m.k], vmA) : "";
     mrows += `<div class="gpmrow"><div class="gpmlbl">${lbl}${ampel}<small>${m.noSoll?"ist":"ist / soll"}</small></div>`;
     tage.forEach(({i})=>{
-      mrows += m.noSoll
-        ? `<div class="gpm one"><span class="ist">${eur(totals[i][m.k])}</span></div>`
-        : `<div class="gpm"><span class="ist">${eur(totals[i][m.k])}</span><span class="sep">/</span><span class="soll">${eur(soll[m.k])}</span></div>`;
+      const inhalt = m.noSoll
+        ? `<span class="ist">${eur(totals[i][m.k])}</span>`
+        : `<span class="ist">${eur(totals[i][m.k])}</span><span class="sep">/</span><span class="soll">${eur(soll[m.k])}</span>`;
+      mrows += m.click
+        ? `<button type="button" class="gpm klick${m.noSoll?" one":""}" data-mclick="${m.click}" aria-label="${m.n} eintragen">${inhalt}<i class="gpstift">✎</i></button>`
+        : `<div class="gpm${m.noSoll?" one":""}">${inhalt}</div>`;
     });
     mrows += `</div>`;
   });
@@ -202,7 +208,9 @@ function gpRender(){
   if(gpKlassen === null) gpKlassen = grid.className;
   grid.className = (gpKlassen ? gpKlassen + " " : "") + "gp " + (breit ? "breit" : "schmal");
   grid.style.setProperty("--gp-tage", tage.length);
-  grid.innerHTML = kopf +
+  const richtung = `<div class="gpleiste"><button type="button" class="mini gprichtung" data-gprichtung>
+      ${gpFrueh() ? "früh → spät" : "spät → früh"} <span aria-hidden="true">⇅</span></button></div>`;
+  grid.innerHTML = richtung + kopf +
     `<div class="gpplan">${rail}<div class="gpspalten">${spalten}</div></div>` +
     `<div class="gpmetrics">${mrows}</div>` +
     `<div class="gplegende">${leg}</div>`;
@@ -223,3 +231,44 @@ setzeTagWahl = function(){
      ruft diese Funktion am Ende selbst auf. */
   if(!gpBreit() && !gpZeichnet) render();
 };
+
+
+/* Schalter für die Richtung – einmal am Raster angemeldet */
+grid.addEventListener('click', ev=>{
+  const b = ev.target.closest('[data-gprichtung]');
+  if(!b) return;
+  settings.planerRichtung = gpFrueh() ? "spaet" : "frueh";
+  saveData(); render();
+});
+
+/* ---------- Plus-Knopf unten rechts ---------- */
+(function(){
+  const fab = document.createElement('button');
+  fab.type = 'button'; fab.id = 'gpFab'; fab.className = 'gpfab';
+  fab.setAttribute('aria-label', 'Termin anlegen');
+  fab.innerHTML = '<span aria-hidden="true">+</span>';
+  document.body.appendChild(fab);
+  fab.onclick = ()=>{
+    const d = gpBreit() ? new Date() : (weekDays[tagWahl] || new Date());
+    const vorschlag = (()=>{ const h = new Date().getHours() + 1; return Math.min(22, Math.max(7, h)); })();
+    const tag = dk(d);
+    simpleDialog("Termin anlegen", "Tag und Startzeit wählen",
+      `<div class="grp">
+         ${fld("gpfTag","Tag",tag,"date")}
+         <div class="field"><label for="gpfH">Startzeit</label>${hourSelect("gpfH", vorschlag)}</div>
+       </div>
+       <p class="err" id="gpfErr" hidden></p>`,
+      ()=>{
+        const t = document.getElementById('gpfTag').value;
+        const h = +document.getElementById('gpfH').value;
+        const err = document.getElementById('gpfErr');
+        if(!t){ err.textContent = "Bitte einen Tag wählen."; err.hidden = false; return; }
+        if(entries[key(t,h)]){ err.textContent = "Um diese Zeit steht schon ein Termin."; err.hidden = false; return; }
+        closeModal();
+        monday = mondayOf(fromDk(t));
+        tagWahl = (fromDk(t).getDay() + 6) % 7;
+        render();
+        openSlot(t, h);
+      }, "Weiter");
+  };
+})();

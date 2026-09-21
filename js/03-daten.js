@@ -80,7 +80,23 @@ function label(e){
   return {t1:"",t2:""};
 }
 /* Beträge: "1.250,50" -> 1250.5 */
-const num = s => { const v = parseFloat(String(s??"").replace(/\./g,"").replace(",",".")); return isNaN(v)?0:v; };
+/* Liest Beträge in jeder Schreibweise richtig: 150,90 · 150.90 · 1.234,56 · 1,234.56 · 1.234
+   Früher wurde jeder Punkt als Tausendertrennzeichen weggeworfen – aus 150.90 wurde 15090. */
+const num = s => {
+  let t = String(s ?? "").trim().replace(/[\s€]/g, "");
+  if(!t) return 0;
+  const k = t.lastIndexOf(","), p = t.lastIndexOf(".");
+  if(k >= 0 && p >= 0){                              // beides: das hintere ist das Dezimalzeichen
+    t = k > p ? t.replace(/\./g, "").replace(",", ".") : t.replace(/,/g, "");
+  } else if(k >= 0){                                 // nur Komma
+    t = (t.match(/,/g).length > 1) ? t.replace(/,/g, "") : t.replace(",", ".");
+  } else if(p >= 0){                                 // nur Punkt
+    const hinten = t.length - p - 1;
+    if(t.match(/\./g).length > 1 || hinten === 3) t = t.replace(/\./g, "");   // 1.234 oder 1.234.567
+  }
+  const v = parseFloat(t);
+  return isNaN(v) ? 0 : v;
+};
 const eur = v => v ? Math.round(v).toLocaleString("de-DE",{maximumFractionDigits:0}) : "–";
 const preis = v => (+v||0).toLocaleString("de-DE",{minimumFractionDigits:2, maximumFractionDigits:2});
 function dayTotals(day){

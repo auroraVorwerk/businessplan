@@ -29,8 +29,10 @@ renderProfil = async function(){
     <p class="sub">Nur für dich sichtbar. Angemeldet wird immer mit der DK-Nummer.</p>
     <div class="rsliste">
       <div class="rszeile"><span>DK-Nummer</span><b>${me.dk.replace(/^TL-/,"")}</b></div>
-      <div class="rszeile"><span>PIN</span><b id="rsPin">••••</b><button class="mini" id="rsPinZeig">anzeigen</button></div>
-      <div class="rszeile"><span>Passwort</span><b id="rsPw">••••••••</b><button class="mini" id="rsPwZeig">anzeigen</button></div>
+      <div class="rszeile"><span>PIN</span><b id="rsPin">••••</b>
+        <button class="mini" id="rsPinZeig">anzeigen</button><button class="mini" id="rsPinNeu">ändern</button></div>
+      <div class="rszeile"><span>Passwort</span><b id="rsPw">••••••••</b>
+        <button class="mini" id="rsPwZeig">anzeigen</button><button class="mini" id="rsPwNeu">ändern</button></div>
     </div>
     <p class="hinweis" id="rsHinweis" hidden></p>`;
   const hilfe = document.createElement('div');
@@ -51,10 +53,12 @@ renderProfil = async function(){
     hinweis("");
     try{
       const pin = await pinLesen(me.dk);
-      if(!pin) return hinweis("Ohne hinterlegten PIN lässt sich das Passwort nicht anzeigen.");
-      document.getElementById('rsPw').textContent = await pinOeffnen(pin, me.dk);
-    }catch(e){ hinweis("Das Passwort ließ sich nicht öffnen: " + ((e && e.message) || e)); }
+      if(!pin) return hinweis("Ohne hinterlegten PIN lässt sich das Passwort nicht anzeigen. Lege über „ändern“ beim PIN einen an.");
+      document.getElementById('rsPw').textContent = await passwortOeffnen(pin);
+    }catch(e){ hinweis("Das Passwort ließ sich nicht öffnen. Setz PIN oder Passwort einmal neu, dann klappt es wieder."); }
   };
+  document.getElementById('rsPinNeu').onclick = ()=> pinAendernDialog();
+  document.getElementById('rsPwNeu').onclick  = ()=> passwortAendernDialog();
 };
 
 /* ---------- 2 · Nichtkauf: nur der Grund ---------- */
@@ -263,3 +267,89 @@ show = function(k){
   if(document.body.dataset.page === "team") try{ renderTeamManuell(); }catch(e){ console.error(e); }
   if(document.body.dataset.page === "provision") try{ renderProv(); }catch(e){ console.error(e); }
 };
+
+
+/* ---------- PIN und Passwort: ansehen und ändern ----------
+   Nach dem Umstellen von TL-DK auf DK liegen PIN und verschlüsseltes
+   Passwort womöglich noch unter der alten Nummer. Dann wird dort gesucht. */
+const pinLesenOhneAlt = pinLesen;
+pinLesen = async function(dk){
+  let p = await pinLesenOhneAlt(dk);
+  if(!p && me && me.umgezogenVon && dk === me.dk) p = await pinLesenOhneAlt(me.umgezogenVon);
+  return p;
+};
+async function passwortOeffnen(pin){
+  try{ return await pinOeffnen(pin, me.dk); }
+  catch(e){
+    if(me.umgezogenVon) return await pinOeffnen(pin, me.umgezogenVon);
+    throw e;
+  }
+}
+async function bestaetigePasswort(pw){
+  const u = auth && auth.currentUser;
+  if(!u) throw new Error("Nicht angemeldet.");
+  const cred = firebase.auth.EmailAuthProvider.credential(u.email, pw);
+  await u.reauthenticateWithCredential(cred);
+  return u;
+}
+function zugangFehler(e){
+  const c = (e && e.code) || "";
+  if(/wrong-password|invalid-credential|invalid-login/.test(c)) return "Das aktuelle Passwort stimmt nicht.";
+  if(/too-many-requests/.test(c)) return "Zu viele Versuche. Bitte kurz warten.";
+  if(/weak-password/.test(c)) return "Das neue Passwort braucht mindestens 6 Zeichen.";
+  if(/network/.test(c)) return "Keine Verbindung.";
+  return (e && e.message) || "Hat nicht geklappt.";
+}
+function pinAendernDialog(){
+  simpleDialog("PIN festlegen", "Vier Ziffern – dein Notschlüssel, falls du das Passwort vergisst",
+    `<div class="grp">${fld("npPin","Neuer PIN","","password",'inputmode="numeric" maxlength="4" autocomplete="off"')}
+       ${fld("npPw","Dein aktuelles Passwort","","password",'autocomplete="current-password"')}</div>
+     <p class="err" id="npErr" hidden></p>`,
+    async ()=>{
+      const pin = document.getElementById('npPin').value.trim();
+      const pw  = document.getElementById('npPw').value;
+      const err = document.getElementById('npErr');
+      const zeig = t => { err.textContent = t; err.hidden = false; };
+      if(!/^\d{4}$/.test(pin)) return zeig("Der PIN besteht aus genau vier Ziffern.");
+      try{
+        await bestaetigePasswort(pw);
+        await db.ref('secret/'+me.dk).set({pin});
+        await pinSpeichern(pin, me.dk, pw);
+        closeModal(); renderProfil();
+      }catch(e){ zeig(zugangFehler(e)); }
+    }, "Speichern");
+}
+function passwortAendernDialog(){
+  simpleDialog("Passwort ändern", "Gilt ab sofort für die Anmeldung",
+    `<div class="grp">${fld("ppAlt","Aktuelles Passwort","","password",'autocomplete="current-password"')}
+       ${fld("ppNeu","Neues Passwort","","password",'autocomplete="new-password"')}
+       ${fld("ppNeu2","Neues Passwort wiederholen","","password",'autocomplete="new-password"')}</div>
+     <p class="err" id="ppErr" hidden></p>`,
+    async ()=>{
+      const alt = document.getElementById('ppAlt').value;
+      const neu = document.getElementById('ppNeu').value;
+      const neu2 = document.getElementById('ppNeu2').value;
+      const err = document.getElementById('ppErr');
+      const zeig = t => { err.textContent = t; err.hidden = false; };
+      if(neu.length < 6) return zeig("Das neue Passwort braucht mindestens 6 Zeichen.");
+      if(neu !== neu2) return zeig("Die beiden neuen Passwörter stimmen nicht überein.");
+      try{
+        const u = await bestaetigePasswort(alt);
+        await u.updatePassword(neu);
+        const pin = await pinLesen(me.dk);
+        if(pin) await pinSpeichern(pin, me.dk, neu);    // damit „anzeigen“ das neue zeigt
+        closeModal(); renderProfil();
+      }catch(e){ zeig(zugangFehler(e)); }
+    }, "Ändern");
+}
+
+/* ---------- Beträge: Nachkommastellen werden gerundet ----------
+   Gilt für alle Betragsfelder (Eingabe mit Dezimaltastatur). 150,90 wird 151,
+   150,40 wird 150. Punkt und Komma werden beide verstanden. */
+document.addEventListener('change', ev=>{
+  const f = ev.target;
+  if(!f || f.tagName !== "INPUT" || f.getAttribute('inputmode') !== "decimal") return;
+  if(!f.value.trim()) return;
+  const gerundet = Math.round(num(f.value));
+  if(String(gerundet) !== f.value) f.value = String(gerundet);
+}, true);

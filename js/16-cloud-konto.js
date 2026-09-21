@@ -304,10 +304,19 @@ function schreibe(){
 /* Verbindung beobachten: kommt das Netz zurück, wird sofort nachgereicht */
 if(db){
   try{
+    /* Firebase meldet beim Start kurz "nicht verbunden", bevor die Verbindung
+       steht. Erst wenn das nach drei Sekunden noch so ist, zeigt die App "offline". */
+    let offlineTimer = null;
     db.ref('.info/connected').on('value', s=>{
       verbunden = !!s.val();
-      if(verbunden){ warteStufe = 0; schreibe(); }
-      else saveState("offline", true);
+      clearTimeout(offlineTimer);
+      if(verbunden){
+        warteStufe = 0;
+        if(!warteZahl()) saveState("gespeichert");
+        schreibe();
+      } else {
+        offlineTimer = setTimeout(()=>{ if(!verbunden) saveState("offline", true); }, 3000);
+      }
     });
   }catch(e){}
 }
