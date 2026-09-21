@@ -1,0 +1,77 @@
+/* =============================================================
+   Farbwelten · wird nach app.css und ui.css geladen
+
+   Diese Datei ändert nur Farben. Keine Masse, keine Abstände, kein
+   Layout – damit sie jederzeit gefahrlos wieder entfernt werden kann:
+   Zeile in der index.html raus, und alles sieht aus wie vorher.
+
+   Dunkel · „Schiefer"
+   Kein Schwarzgrün mehr, sondern kühler Graphit mit ganz leichtem
+   Olivstich. Das Firmengrün ist darin die einzige gesättigte Farbe und
+   wirkt dadurch heller, ohne heller zu sein.
+
+   Hell · „Kalkpapier"
+   Kein Weiß und kein Creme, sondern ein blasser Kalkton mit einem Hauch
+   Grün. Karten sind reinweiß und heben sich dadurch von allein ab.
+
+   Die Farben der Termine, Quellen und Statistikspalten bleiben
+   unangetastet – die tragen Bedeutung und gehören nicht zur Gestaltung.
+   ============================================================= */
+
+:root{
+  --bg:#15191A;
+  --surface:#1D2325;
+  --surface-2:#252C2E;
+  --surface-3:#2F3739;
+  --line:#343E40;
+  --line-soft:#232A2C;
+  --text:#E7ECEA;
+  --muted:#9AA7A5;
+  --faint:#7A8886;           /* heller als nötig: bleibt über 4,5:1 Kontrast */
+  --accent:#2BBE6E;          /* Firmengrün, auf Graphit eine Spur aufgehellt */
+  --info:#5AA7C0;            /* alles rein Informative – Anrufe, Hinweise */
+  --warn:#D2705A;            /* Kupfer statt Signalrot */
+  --z0:#171C1D;
+  --z1:#202729;
+  --tick:#252D2F;
+  --linie:rgba(255,255,255,.28);
+
+  --kante:rgba(255,255,255,.05);
+  --schatten:none;
+
+  --side:#101617;
+  --side-text:#E7ECEA;
+  --side-muted:rgba(231,236,234,.62);
+  --side-active:#2BBE6E;
+  --side-active-text:#08140E;
+  --side-line:rgba(255,255,255,.10);
+}
+
+body.hell{
+  --bg:#EDF0EB;
+  --surface:#FFFFFF;
+  --surface-2:#E7EBE3;
+  --surface-3:#DCE2D7;
+  --line:#D4DACE;
+  --line-soft:#E4E9DF;
+  --text:#18201C;
+  --muted:#5A6661;
+  --faint:#87918B;
+  --accent:#0F9E52;          /* auf hellem Grund tiefer, damit Weiß darauf lesbar bleibt */
+  --info:#2C7189;
+  --warn:#B75B3F;
+  --z0:#FAFBF8;
+  --z1:#EFF2EC;
+  --tick:#E5EADF;
+  --linie:rgba(0,0,0,.20);
+
+  --kante:transparent;
+  --schatten:0 1px 2px rgba(24,32,28,.04), 0 8px 22px rgba(24,32,28,.05);
+
+  --side:#0F9E52;
+  --side-text:#FFFFFF;
+  --side-muted:rgba(255,255,255,.80);
+  --side-active:#FFFFFF;
+  --side-active-text:#0B7C40;
+  --side-line:rgba(255,255,255,.24);
+}
