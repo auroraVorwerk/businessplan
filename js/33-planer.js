@@ -128,12 +128,27 @@ function gpSpalte(d, iTag, heute){
              background:${c};color:${textOn(c)}"><span class="gptxt"><b>${l.t1}</b></span></div>`;
       return;
     }
-    bl += `<button class="slot filled gpblock${b.fest?" fest":""}${b.spuren>1?" geteilt":""}${status}"
+    /* Variante A: kräftig = Ankunftsfenster (die zugesagte Stunde),
+       hell und schraffiert = so lange darf der Termin noch dauern.
+       Feste Termine haben einen Rahmen und keine Zweiteilung.          */
+    const fruehOben = gpFrueh();
+    let teil = "", textLage = "", bisTag = "";
+    if(!b.fest){
+      const fEnde = Math.min(b.bis, b.h + 1);                 // Ende des Ankunftsfensters
+      const restPct = Math.max(0, (b.bis - fEnde) / (b.bis - b.von) * 100);
+      teil = `<span class="gprest" style="${fruehOben ? "bottom" : "top"}:0;height:${restPct}%"></span>`;
+      bisTag = `<span class="gpbis" style="${fruehOben ? "bottom" : "top"}:3px">bis ${pad(b.h+2)}</span>`;
+      textLage = fruehOben ? "oben" : "unten";
+    }
+    const zeile2 = b.fest ? `${zeit} · feste Zeit` : `Ankunft ${pad(b.h)}–${pad(b.h+1)}`;
+    bl += `<button class="slot filled gpblock gpa${b.fest?" fest":""}${b.spuren>1?" geteilt":""}${status}"
        style="top:${oben}%;height:${hoch}%;left:${links}%;width:${breite}%;
               background:${c};color:${textOn(c)}${qc?`;--qc:${qc}`:""}"
        data-day="${day}" data-hour="${b.h}" title="${tipp}">
+       ${teil}
        ${qc ? `<span class="gpq"></span>` : ""}
-       <span class="gptxt${rechts}"><b>${l.t1}</b><em>${zeit}${(!b.fest && l.t2) ? " · " + l.t2 : ""}</em></span>
+       <span class="gptxt${rechts} ${textLage}"><b>${l.t1}</b><em>${zeile2}</em></span>
+       ${bisTag}
      </button>`;
   });
 
@@ -210,7 +225,12 @@ function gpRender(){
   grid.style.setProperty("--gp-tage", tage.length);
   const richtung = `<div class="gpleiste"><button type="button" class="mini gprichtung" data-gprichtung>
       ${gpFrueh() ? "früh → spät" : "spät → früh"} <span aria-hidden="true">⇅</span></button></div>`;
-  grid.innerHTML = richtung + kopf +
+  const erklaerung = `<div class="gperkl">
+      <span class="gpez"><i class="m voll"></i><span><b>Volle Farbe</b> = dein Ankunftsfenster, das sagst du dem Kunden zu</span></span>
+      <span class="gpez"><i class="m hell"></i><span><b>Heller Teil</b> = so lange darf der Termin noch dauern</span></span>
+      <span class="gpez"><i class="m fix"></i><span><b>Mit Rahmen</b> = feste Zeit, z. B. ein Meeting</span></span>
+    </div>`;
+  grid.innerHTML = richtung + erklaerung + kopf +
     `<div class="gpplan">${rail}<div class="gpspalten">${spalten}</div></div>` +
     `<div class="gpmetrics">${mrows}</div>` +
     `<div class="gplegende">${leg}</div>`;
