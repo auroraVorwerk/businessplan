@@ -2,19 +2,21 @@
    VERSION bei jedem Hochladen um eins erhöhen. Der Rest läuft von allein:
    das Gerüst kommt sofort aus dem Zwischenspeicher und wird im Hintergrund
    erneuert, die Daten holt immer Firebase. */
-const VERSION = "dbp-v12";
+const VERSION = "dbp-v16";
 const DATEIEN = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./css/app.css?v=8",
-  "./css/ui.css?v=8",
-  "./css/theme.css?v=8",
-  "./css/planer.css?v=8",
-  "./css/extras.css?v=10",
-  "./css/design.css?v=11",
-  "./css/feinschliff.css?v=11",
-  "./css/planer-a.css?v=12",
+  "./css/app.css?v=15",
+  "./css/ui.css?v=15",
+  "./css/theme.css?v=15",
+  "./css/planer.css?v=15",
+  "./css/extras.css?v=15",
+  "./css/design.css?v=15",
+  "./css/feinschliff.css?v=15",
+  "./css/planer-a.css?v=15",
+  "./css/feinschliff2.css?v=15",
+  "./css/verkaeufe.css?v=16",
   "./js/01-konstanten.js",
   "./js/02-datum.js",
   "./js/03-daten.js?v=11",
@@ -24,13 +26,13 @@ const DATEIEN = [
   "./js/07-potenzial.js",
   "./js/08-wiedervorlage.js",
   "./js/09-dialogschritte.js?v=8",
-  "./js/10-statistik.js",
+  "./js/10-statistik.js?v=16",
   "./js/11-druck.js",
   "./js/12-vertriebsmonat-provision.js",
-  "./js/13-provisionsrechner.js?v=8",
+  "./js/13-provisionsrechner.js?v=14",
   "./js/14-provisionswunsch.js",
   "./js/15-auswertungen.js",
-  "./js/16-cloud-konto.js?v=11",
+  "./js/16-cloud-konto.js?v=13",
   "./js/17-anmeldung.js?v=3",
   "./js/18-teamansicht.js",
   "./js/19-profil.js?v=3",
@@ -40,20 +42,22 @@ const DATEIEN = [
   "./js/23-ziele-jobtickets.js",
   "./js/24-team-wochenmeldung.js",
   "./js/25-fahrtenbuch.js",
-  "./js/26-kundenliste.js",
+  "./js/26-kundenliste.js?v=16",
   "./js/27-abgleich-menue.js",
   "./js/28-heute.js?v=5",
   "./js/29-jahresrueckblick.js",
   "./js/30-zaehlen.js",
   "./js/31-hilfe.js",
   "./js/32-start.js",
-  "./js/33-planer.js?v=12",
+  "./js/33-planer.js?v=15",
   "./js/34-messe.js?v=8",
   "./js/35-wochenmeldung.js?v=8",
   "./js/36-heute.js?v=8",
   "./js/37-inventur.js?v=8",
   "./js/38-team.js?v=10",
-  "./js/39-rest.js?v=11"
+  "./js/39-rest.js?v=15",
+  "./js/41-ergaenzungen.js?v=15",
+  "./js/42-verkaeufe.js?v=16"
 ];
 
 self.addEventListener("install", ev=>{
