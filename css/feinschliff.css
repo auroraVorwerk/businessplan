@@ -48,24 +48,24 @@ html, body{ max-width:100%; overflow-x:hidden; }
 /* ---------- Planer ---------- */
 /* Buttons bekamen von der alten CSS eine Mindesthöhe – dadurch passten die
    Zeilen nicht mehr zur Zeitleiste und alles verrutschte nach unten. */
-#grid.gp .gprow, #grid.gp .gprz{
+.gp .gprow, .gp .gprz{
   min-height:0 !important; max-height:var(--gp-h); height:var(--gp-h) !important;
   padding:0 !important; margin:0 !important; box-sizing:border-box;
 }
-#grid.gp .gprz{ align-items:center; padding-right:0 !important; }
-#grid.gp .gprz b, #grid.gp .gprz i{ text-align:center; }
-#grid.gp{ --gp-rail:44px; }
-#grid.gp .gpplan{ padding:4px 6px 4px 4px; }
-#grid.gp .gpleiste{ display:flex; justify-content:center; margin:0 0 8px; }
-#grid.gp .gprichtung{ font-size:.72rem; }
+.gp .gprz{ align-items:center; padding-right:0 !important; }
+.gp .gprz b, .gp .gprz i{ text-align:center; }
+.gp{ --gp-rail:44px; }
+.gp .gpplan{ padding:4px 6px 4px 4px; }
+.gp .gpleiste{ display:flex; justify-content:center; margin:0 0 8px; }
+.gp .gprichtung{ font-size:.72rem; }
 /* K70: das Feld selbst ist der Knopf */
-#grid.gp .gpm.klick{
+.gp .gpm.klick{
   border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line)); cursor:pointer;
   position:relative; font:inherit; color:var(--text); width:100%;
 }
-#grid.gp .gpm.klick:active{ background:color-mix(in srgb,var(--accent) 16%,var(--surface-2)); }
-#grid.gp .gpm .gpstift{ font-style:normal; font-size:.62rem; color:var(--accent); margin-left:4px; }
-#grid.gp .gpmlbl{ align-items:flex-start; }
+.gp .gpm.klick:active{ background:color-mix(in srgb,var(--accent) 16%,var(--surface-2)); }
+.gp .gpm .gpstift{ font-style:normal; font-size:.62rem; color:var(--accent); margin-left:4px; }
+.gp .gpmlbl{ align-items:flex-start; }
 
 /* Plus-Knopf unten rechts, nur im Planer */
 .gpfab{

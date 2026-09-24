@@ -4,40 +4,40 @@
    "gp" traegt - die alte Rasteransicht bleibt davon unberuehrt.
    ============================================================= */
 
-#grid.gp{
+.gp{
   display:block;
   --gp-h:40px;                     /* Hoehe einer Stundenzeile am Handy */
   --gp-rail:46px;
   --gp-tage:1;
 }
-#grid.gp.breit{ --gp-h:30px; --gp-rail:52px; }
+.gp.breit{ --gp-h:30px; --gp-rail:52px; }
 
 /* ---------- Kopfzeile ---------- */
-#grid.gp .gpkopf{
+.gp .gpkopf{
   display:grid;
   grid-template-columns:var(--gp-rail) repeat(var(--gp-tage),minmax(0,1fr));
   gap:3px; margin-bottom:5px;
 }
-#grid.gp .gpkopf .gpvw{
+.gp .gpkopf .gpvw{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   font-size:.6rem; color:var(--muted); line-height:1.1;
 }
-#grid.gp .gpkopf .gpvw b{font-size:.62rem}
-#grid.gp .gpkopf .gpvw i{font-style:normal; font-size:.58rem; color:var(--faint)}
-#grid.gp .gptag{
+.gp .gpkopf .gpvw b{font-size:.62rem}
+.gp .gpkopf .gpvw i{font-style:normal; font-size:.58rem; color:var(--faint)}
+.gp .gptag{
   text-align:center; font-size:.68rem; font-weight:700; color:var(--muted);
   padding:5px 2px; border-radius:var(--r-sm); background:var(--surface-2);
   line-height:1.2; min-width:0;
 }
-#grid.gp .gptag small{display:block; font-weight:500; font-size:.58rem; color:var(--faint)}
-#grid.gp .gptag.ist-heute{
+.gp .gptag small{display:block; font-weight:500; font-size:.58rem; color:var(--faint)}
+.gp .gptag.ist-heute{
   background:color-mix(in srgb,var(--accent) 22%,var(--surface-2));
   color:var(--text);
 }
-#grid.gp .gptag.ist-heute small{color:var(--text); opacity:.7}
+.gp .gptag.ist-heute small{color:var(--text); opacity:.7}
 
 /* ---------- Plan ---------- */
-#grid.gp .gpplan{
+.gp .gpplan{
   display:grid;
   grid-template-columns:var(--gp-rail) minmax(0,1fr);
   gap:3px;
@@ -47,98 +47,98 @@
   padding:4px;
   overflow:hidden;
 }
-#grid.gp .gprail{display:flex; flex-direction:column}
-#grid.gp .gprz{
+.gp .gprail{display:flex; flex-direction:column}
+.gp .gprz{
   height:var(--gp-h); flex:none;
   display:flex; flex-direction:column; justify-content:center; align-items:flex-end;
   padding-right:5px; line-height:1.05;
   border-bottom:1px solid var(--line-soft);
 }
-#grid.gp .gprz:last-child{border-bottom:0}
-#grid.gp .gprz b{font-size:.66rem; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums}
-#grid.gp .gprz i{font-style:normal; font-size:.52rem; color:var(--faint)}
+.gp .gprz:last-child{border-bottom:0}
+.gp .gprz b{font-size:.66rem; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums}
+.gp .gprz i{font-style:normal; font-size:.52rem; color:var(--faint)}
 
-#grid.gp .gpspalten{display:grid; grid-template-columns:repeat(var(--gp-tage),minmax(0,1fr)); gap:3px}
-#grid.gp .gpday{position:relative; min-width:0; border-left:1px solid var(--line-soft)}
-#grid.gp .gpday.ist-heute{background:color-mix(in srgb,var(--accent) 5%,transparent)}
-#grid.gp .gprows{display:flex; flex-direction:column}
-#grid.gp .gprow{
+.gp .gpspalten{display:grid; grid-template-columns:repeat(var(--gp-tage),minmax(0,1fr)); gap:3px}
+.gp .gpday{position:relative; min-width:0; border-left:1px solid var(--line-soft)}
+.gp .gpday.ist-heute{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.gp .gprows{display:flex; flex-direction:column}
+.gp .gprow{
   height:var(--gp-h); flex:none; width:100%;
   border:0; border-bottom:1px solid var(--line-soft);
   background:transparent; padding:0; border-radius:0;
   position:relative; cursor:pointer; box-shadow:none;
 }
-#grid.gp .gprow:nth-child(even){background:color-mix(in srgb,var(--text) 2%,transparent)}
-#grid.gp .gprow:last-child{border-bottom:0}
-#grid.gp button.gprow:active{background:color-mix(in srgb,var(--accent) 14%,transparent)}
-#grid.gp .gprow.gpvoll{cursor:default}
-#grid.gp .gprow.soft{
+.gp .gprow:nth-child(even){background:color-mix(in srgb,var(--text) 2%,transparent)}
+.gp .gprow:last-child{border-bottom:0}
+.gp button.gprow:active{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.gp .gprow.gpvoll{cursor:default}
+.gp .gprow.soft{
   background:repeating-linear-gradient(135deg,transparent 0 6px,
              color-mix(in srgb,var(--text) 6%,transparent) 6px 12px);
 }
 
 /* ---------- Bloecke ---------- */
-#grid.gp .gpblocks{position:absolute; inset:0; pointer-events:none}
-#grid.gp .gpblock{
+.gp .gpblocks{position:absolute; inset:0; pointer-events:none}
+.gp .gpblock{
   position:absolute; pointer-events:auto; box-sizing:border-box;
   border:0; border-radius:11px; overflow:hidden; padding:0;
   box-shadow:inset 0 0 0 1px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.16);
   text-align:left; cursor:pointer;
 }
-#grid.gp .gpblock.geteilt{border-radius:9px}
-#grid.gp .gpblock.fest{
+.gp .gpblock.geteilt{border-radius:9px}
+.gp .gpblock.fest{
   border-radius:8px;
   box-shadow:inset 0 0 0 2px rgba(0,0,0,.32), 0 2px 8px rgba(0,0,0,.16);
 }
-#grid.gp .gpblock.fremdtag{pointer-events:none; opacity:.85}
-#grid.gp .gpblock.done{box-shadow:inset 0 0 0 2px var(--accent), 0 2px 8px rgba(0,0,0,.16)}
-#grid.gp .gpblock.halb{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent), 0 2px 8px rgba(0,0,0,.16)}
-#grid.gp .gpq{position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--qc);
+.gp .gpblock.fremdtag{pointer-events:none; opacity:.85}
+.gp .gpblock.done{box-shadow:inset 0 0 0 2px var(--accent), 0 2px 8px rgba(0,0,0,.16)}
+.gp .gpblock.halb{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent), 0 2px 8px rgba(0,0,0,.16)}
+.gp .gpq{position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--qc);
   border-radius:9px 0 0 9px}
-#grid.gp .gptxt{position:absolute; left:8px; right:7px; bottom:4px; text-align:left}
-#grid.gp .gptxt.rechts{text-align:right}
-#grid.gp .gpblock b{
+.gp .gptxt{position:absolute; left:8px; right:7px; bottom:4px; text-align:left}
+.gp .gptxt.rechts{text-align:right}
+.gp .gpblock b{
   display:block; font-size:.7rem; font-weight:700; line-height:1.15;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-#grid.gp .gpblock em{
+.gp .gpblock em{
   display:block; font-style:normal; font-size:.55rem; opacity:.8;
   font-variant-numeric:tabular-nums;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
 /* ---------- Soll und Ist ---------- */
-#grid.gp .gpmetrics{margin-top:8px; display:flex; flex-direction:column; gap:3px}
-#grid.gp .gpmrow{
+.gp .gpmetrics{margin-top:8px; display:flex; flex-direction:column; gap:3px}
+.gp .gpmrow{
   display:grid;
   grid-template-columns:var(--gp-rail) repeat(var(--gp-tage),minmax(0,1fr));
   gap:3px; align-items:stretch;
 }
-#grid.gp .gpmlbl{
+.gp .gpmlbl{
   font-size:.58rem; color:var(--muted); display:flex; flex-direction:column;
   justify-content:center; line-height:1.15; min-width:0;
 }
-#grid.gp .gpmlbl small{font-size:.5rem; color:var(--faint)}
-#grid.gp .gpmlbl .mlbl{
+.gp .gpmlbl small{font-size:.5rem; color:var(--faint)}
+.gp .gpmlbl .mlbl{
   background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-sm);
   padding:3px 5px; font-size:.58rem; color:var(--text); text-align:left;
 }
-#grid.gp .gpm{
+.gp .gpm{
   background:var(--surface-2); border-radius:var(--r-sm);
   padding:5px 4px; text-align:center; font-size:.62rem;
   font-variant-numeric:tabular-nums; min-width:0;
   display:flex; align-items:center; justify-content:center; gap:3px;
 }
-#grid.gp .gpm .ist{font-weight:700; color:var(--text)}
-#grid.gp .gpm .sep, #grid.gp .gpm .soll{color:var(--faint)}
+.gp .gpm .ist{font-weight:700; color:var(--text)}
+.gp .gpm .sep, .gp .gpm .soll{color:var(--faint)}
 
 /* ---------- Legende ---------- */
-#grid.gp .gplegende{display:flex; flex-wrap:wrap; gap:5px 10px; margin-top:9px}
-#grid.gp .gplc{display:flex; align-items:center; gap:5px; font-size:.6rem; color:var(--muted)}
-#grid.gp .gplc i{width:10px; height:10px; border-radius:3px; flex:none}
+.gp .gplegende{display:flex; flex-wrap:wrap; gap:5px 10px; margin-top:9px}
+.gp .gplc{display:flex; align-items:center; gap:5px; font-size:.6rem; color:var(--muted)}
+.gp .gplc i{width:10px; height:10px; border-radius:3px; flex:none}
 
 @media (max-width:759px){
-  #grid.gp .gptag{font-size:.74rem}
-  #grid.gp .gpblock b{font-size:.76rem}
-  #grid.gp .gpblock em{font-size:.6rem}
+  .gp .gptag{font-size:.74rem}
+  .gp .gpblock b{font-size:.76rem}
+  .gp .gpblock em{font-size:.6rem}
 }
