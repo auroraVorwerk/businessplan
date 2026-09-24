@@ -159,7 +159,7 @@ function gpSpalte(d, iTag, heute){
     }
     const zeile2 = b.fest ? zeit : `Ankunft ${pad(b.h)}–${pad(b.h+1)}`;
     bl += `<button class="slot filled gpblock gpa${b.fest?" fest":""}${b.spuren>1?" geteilt":""}${status}"
-       style="top:${oben}%;height:calc(${hoch}% - 3px);left:calc(${links}% + ${luft}px);
+       style="top:calc(${oben}% + 2px);height:calc(${hoch}% - 5px);left:calc(${links}% + ${luft}px);
               width:calc(${breite}% - ${luft*2}px);
               background:${c};color:${textOn(c)}${qc?`;--qc:${qc}`:""}"
        data-day="${day}" data-hour="${b.h}" title="${tipp}">
@@ -254,9 +254,10 @@ function gpRender(){
       <span class="gpez"><i class="m hell"></i><span><b>Heller Teil</b> = so lange darf der Termin noch dauern</span></span>
       <span class="gpez"><i class="m fix"></i><span><b>Mit Rahmen</b> = feste Zeit, z. B. ein Meeting</span></span>
     </div>`;
-  grid.innerHTML = richtung + erklaerung + `<div class="gplegende">${leg}</div>` + kopf +
+  grid.innerHTML = richtung + kopf +
     `<div class="gpplan">${rail}<div class="gpspalten">${spalten}</div></div>` +
-    `<div class="gpmetrics">${mrows}</div>`;
+    `<div class="gpmetrics">${mrows}</div>` +
+    erklaerung + `<div class="gplegende">${leg}</div>`;
   tagesleiste();
 }
 
@@ -326,6 +327,9 @@ const fremdAnsichtOhneKlassen = fremdAnsicht;
 fremdAnsicht = function(){
   const e = fremdAnsichtOhneKlassen();
   const kl = (grid.className || "").split(" ").filter(x=>["gp","breit","schmal"].includes(x)).join(" ");
-  if(e && e.gridHtml && kl) e.gridHtml = `<div class="${kl}">${e.gridHtml}</div>`;
+  /* Die Spaltenzahl steht als Stilangabe am Raster und geht beim Kopieren verloren */
+  const tage = ((e && e.gridHtml) || "").split('class="gpday').length - 1;
+  if(e && e.gridHtml && kl)
+    e.gridHtml = `<div class="${kl}" style="--gp-tage:${Math.max(1, tage)}">${e.gridHtml}</div>`;
   return e;
 };

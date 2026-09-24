@@ -116,6 +116,8 @@ gpBloecke = function(day){
 
 /* ---------- 18 · Verkäufe ---------- */
 PAGES.verkaeufe = "Verkäufe";
+/* Preisschild als Symbol im Menü */
+IC.verkaeufe = `<path d="M3 11.5V5a2 2 0 0 1 2-2h6.5L21 12.5 12.5 21 3 11.5z"/><circle cx="7.5" cy="7.5" r="1.3"/>`;
 (function(){
   const i = MENUE.findIndex(m => m[0] === "planer");
   if(i >= 0 && !MENUE.some(m => m[0] === "verkaeufe")) MENUE.splice(i + 1, 0, ["verkaeufe","Verkäufe"]);
@@ -211,7 +213,8 @@ function distanzDialog(){
      <div class="h4">Verkauf</div>
      <div class="grp">
        ${fld("dvDatum","Datum des Kaufs",heute,"date")}
-       <div class="sect"><span class="lb">Gebiet</span>${seg("dvGebiet",["Festgebiet","Weißgebiet"],"Festgebiet")}</div>
+       <div class="field"><label for="dvGebiet">Gebiet</label>
+         <select id="dvGebiet"><option>Festgebiet</option><option>Weißgebiet</option></select></div>
        ${fld("dvEinheiten","Einheiten","","text",'inputmode="numeric"')}
        ${fld("dvUmsatz","Bruttoumsatz €","","text",'inputmode="decimal"')}
      </div>
@@ -256,8 +259,7 @@ function distanzSpeichern(){
   const datum = (document.getElementById('dvDatum') || {}).value;
   const einheiten = Math.round(num((document.getElementById('dvEinheiten') || {}).value));
   const umsatz = (document.getElementById('dvUmsatz') || {}).value;
-  const gebietKnopf = document.querySelector('[data-seg="dvGebiet"][aria-pressed="true"], [data-seg="dvGebiet"].on');
-  const gebiet = (gebietKnopf && (gebietKnopf.dataset.val || gebietKnopf.textContent.trim())) || draft.nb.dvGebiet || "Festgebiet";
+  const gebiet = (document.getElementById('dvGebiet') || {}).value || "Festgebiet";
   if(!d.nachname) return zeig("Bitte den Nachnamen eintragen.");
   if(!datum) return zeig("Bitte das Datum des Kaufs eintragen.");
   if(!num(umsatz) && !einheiten) return zeig("Bitte Einheiten oder Umsatz eintragen.");
