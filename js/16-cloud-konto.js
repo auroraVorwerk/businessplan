@@ -59,7 +59,12 @@ const istKBSatz = u => !!u && !istTLSatz(u) && !istAdminSatz(u);
 /* Wie die Rolle im Text heisst */
 const rolleName = r => (r === "TL" || r === "Teamleader") ? "Teamleiter"
                      : (r === "Admin") ? "Admin" : "Kundenberater";
-const istAdmin      = () => istAdminSatz(me);
+/* Wer zusätzlich admin:true im Datensatz hat, bleibt in seiner eigenen Rolle
+   und kann in den Einstellungen auf die Admin-Ansicht umschalten – ohne sich
+   ab- und wieder anzumelden. Die Wahl gilt je Gerät. */
+const hatAdminRecht = () => !!me && (me.admin === true || me.admin === "true");
+const adminModusAn  = () => hatAdminRecht() && store.get('bw-adminmodus') === true;
+const istAdmin      = () => istAdminSatz(me) || adminModusAn();
 const istTeamleiter = () => !!me && (istTLSatz(me) || istAdmin());
 /* Neue Zugaenge sind immer Kundenberater. Nur der Adminzugang haengt noch
    an der Nummer, alles andere vergibt der Admin im Profil. */

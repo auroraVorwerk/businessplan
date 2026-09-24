@@ -30,12 +30,12 @@ function statRows(){
   const rows = [];
   weekDays.forEach((d,i)=>{
     const day = dk(d);
-    HOURS_ASC.forEach(h=>{
+    [...HOURS_ASC, 23, 24, 25, 26, 27, 28, 29, 30].forEach(h=>{
       const e = entries[key(day,h)];
       if(!e) return;
       const n = e.nb || {};
       const pcVerkauf = n.verkauft==="Ja" || n.k70==="Ja";      // ohne Verkauf zählt ein CheckIn nicht
-      if(e.kind==="kunde" || (e.kind==="premium" && pcVerkauf)) rows.push({i,h,e,n});
+      if(e.kind==="kunde" || e.kind==="distanz" || (e.kind==="premium" && pcVerkauf)) rows.push({i,h,e,n});
     });
   });
   return rows;

@@ -22,6 +22,20 @@ const gpBreit = () => matchMedia("(min-width: 760px)").matches;
 /* Richtung der Zeitachse: Standard spät oben, umschaltbar auf früh oben */
 const gpFrueh = () => settings.planerRichtung === "frueh";
 const gpStunden = () => gpFrueh() ? HOURS_ASC : START_HOURS;
+/* Ansicht: am Handy ein Tag oder drei Tage, am iPad drei Tage oder die Woche.
+   Drei Tage geben deutlich breitere Spalten – wichtig, wenn Termine überlappen. */
+function gpErlaubt(){ return gpBreit() ? ["drei","woche"] : ["tag","drei"]; }
+function gpAnsicht(){
+  const a = settings.planerAnsicht;
+  return gpErlaubt().includes(a) ? a : (gpBreit() ? "woche" : "tag");
+}
+function gpTageWahl(){
+  const a = gpAnsicht();
+  if(a === "woche") return [0,1,2,3,4,5,6];
+  if(a === "tag")   return [Math.min(6, Math.max(0, tagWahl || 0))];
+  const start = Math.min(4, Math.max(0, tagWahl || 0));
+  return [start, start+1, start+2];
+}
 
 /* Alle Termine eines Tages als Blöcke mit echter Zeit */
 function gpBloecke(day){
@@ -114,8 +128,11 @@ function gpSpalte(d, iTag, heute){
     const e = b.e;
     const oben = (gpFrueh() ? (b.von - GP_UNTEN) : (GP_OBEN - b.bis)) * 100 / (GP_OBEN - GP_UNTEN);
     const hoch = (b.bis - b.von) * 100 / (GP_OBEN - GP_UNTEN);
-    const breite = 100 / (b.spuren || 1);
+    const anzahl = b.spuren || 1;
+    const breite = 100 / anzahl;
     const links = (b.spur || 0) * breite;
+    /* Bei zwei Spuren eine sichtbare Lücke, damit nichts verschmilzt */
+    const luft = anzahl > 1 ? 3 : 2;
     const c = colorOf(e) || "var(--surface-2)";
     const qc = quelleFarbe(e, true);
     const l = label(e);
@@ -140,9 +157,10 @@ function gpSpalte(d, iTag, heute){
       bisTag = `<span class="gpbis" style="${fruehOben ? "bottom" : "top"}:3px">bis ${pad(b.h+2)}</span>`;
       textLage = fruehOben ? "oben" : "unten";
     }
-    const zeile2 = b.fest ? `${zeit} · feste Zeit` : `Ankunft ${pad(b.h)}–${pad(b.h+1)}`;
+    const zeile2 = b.fest ? zeit : `Ankunft ${pad(b.h)}–${pad(b.h+1)}`;
     bl += `<button class="slot filled gpblock gpa${b.fest?" fest":""}${b.spuren>1?" geteilt":""}${status}"
-       style="top:${oben}%;height:${hoch}%;left:${links}%;width:${breite}%;
+       style="top:${oben}%;height:calc(${hoch}% - 3px);left:calc(${links}% + ${luft}px);
+              width:calc(${breite}% - ${luft*2}px);
               background:${c};color:${textOn(c)}${qc?`;--qc:${qc}`:""}"
        data-day="${day}" data-hour="${b.h}" title="${tipp}">
        ${teil}
@@ -173,7 +191,7 @@ function gpRender(){
   document.getElementById('todayBtn').hidden = (+monday === +mondayOf(new Date()));
 
   const breit = gpBreit();
-  const tage = breit ? weekDays.map((d,i)=>({d,i})) : [{d: weekDays[tagWahl] || weekDays[0], i: tagWahl || 0}];
+  const tage = gpTageWahl().map(i=>({d: weekDays[i], i}));
 
   /* Kopfzeile */
   let kopf = `<div class="gpkopf"><span class="gprail gpvw"><b>VW</b><i>${vw.n}/${vw.of}</i></span>`;
@@ -185,7 +203,7 @@ function gpRender(){
   /* Zeitleiste */
   let rail = `<div class="gprail">`;
   gpStunden().forEach(hr=>{
-    rail += `<div class="gprz"><b>${pad(hr)}</b><i>–${pad(hr+2)}</i></div>`;
+    rail += `<div class="gprz"><b>${pad(hr)}</b></div>`;
   });
   rail += `</div>`;
 
@@ -223,17 +241,22 @@ function gpRender(){
   if(gpKlassen === null) gpKlassen = grid.className;
   grid.className = (gpKlassen ? gpKlassen + " " : "") + "gp " + (breit ? "breit" : "schmal");
   grid.style.setProperty("--gp-tage", tage.length);
-  const richtung = `<div class="gpleiste"><button type="button" class="mini gprichtung" data-gprichtung>
-      ${gpFrueh() ? "früh → spät" : "spät → früh"} <span aria-hidden="true">⇅</span></button></div>`;
+  const namen = {tag:"1 Tag", drei:"3 Tage", woche:"Woche"};
+  const richtung = `<div class="gpleiste">
+      <span class="gpansicht" role="group" aria-label="Ansicht">${gpErlaubt().map(a=>
+        `<button type="button" data-gpansicht="${a}" aria-pressed="${gpAnsicht()===a}">${namen[a]}</button>`).join("")}</span>
+      <button type="button" class="gprichtung" data-gprichtung
+        title="Reihenfolge der Stunden umschalten" aria-label="Reihenfolge umschalten: ${gpFrueh() ? "früh oben" : "spät oben"}">
+        <span aria-hidden="true">⇅</span></button>
+    </div>`;
   const erklaerung = `<div class="gperkl">
       <span class="gpez"><i class="m voll"></i><span><b>Volle Farbe</b> = dein Ankunftsfenster, das sagst du dem Kunden zu</span></span>
       <span class="gpez"><i class="m hell"></i><span><b>Heller Teil</b> = so lange darf der Termin noch dauern</span></span>
       <span class="gpez"><i class="m fix"></i><span><b>Mit Rahmen</b> = feste Zeit, z. B. ein Meeting</span></span>
     </div>`;
-  grid.innerHTML = richtung + erklaerung + kopf +
+  grid.innerHTML = richtung + erklaerung + `<div class="gplegende">${leg}</div>` + kopf +
     `<div class="gpplan">${rail}<div class="gpspalten">${spalten}</div></div>` +
-    `<div class="gpmetrics">${mrows}</div>` +
-    `<div class="gplegende">${leg}</div>`;
+    `<div class="gpmetrics">${mrows}</div>`;
   tagesleiste();
 }
 
@@ -255,6 +278,8 @@ setzeTagWahl = function(){
 
 /* Schalter für die Richtung – einmal am Raster angemeldet */
 grid.addEventListener('click', ev=>{
+  const a = ev.target.closest('[data-gpansicht]');
+  if(a){ settings.planerAnsicht = a.dataset.gpansicht; saveData(); render(); return; }
   const b = ev.target.closest('[data-gprichtung]');
   if(!b) return;
   settings.planerRichtung = gpFrueh() ? "spaet" : "frueh";
@@ -292,3 +317,15 @@ grid.addEventListener('click', ev=>{
       }, "Weiter");
   };
 })();
+
+
+/* Die Teamansicht kopiert nur den Inhalt des Rasters, nicht dessen Klassen.
+   Ohne sie greift die Planer-Gestaltung dort nicht – deshalb wird der Inhalt
+   in einen Rahmen mit denselben Klassen gelegt. */
+const fremdAnsichtOhneKlassen = fremdAnsicht;
+fremdAnsicht = function(){
+  const e = fremdAnsichtOhneKlassen();
+  const kl = (grid.className || "").split(" ").filter(x=>["gp","breit","schmal"].includes(x)).join(" ");
+  if(e && e.gridHtml && kl) e.gridHtml = `<div class="${kl}">${e.gridHtml}</div>`;
+  return e;
+};

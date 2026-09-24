@@ -43,6 +43,29 @@ renderProfil = async function(){
   box.insertBefore(zugang, box.children[1] || null);
   box.appendChild(hilfe);
 
+  /* Umschalter Teamleiter / Admin – nur für Zugänge mit Admin-Recht */
+  if(hatAdminRecht() && !box.querySelector('#rsAnsicht')){
+    const an = adminModusAn();
+    const ansicht = document.createElement('div');
+    ansicht.className = 'asec'; ansicht.id = 'rsAnsicht';
+    ansicht.innerHTML = `<h3>Ansicht</h3>
+      <p class="sub">Du hast zusätzlich Admin-Rechte. Hier wechselst du, ohne dich abzumelden.</p>
+      <div class="seg" role="group" aria-label="Ansicht">
+        <button type="button" data-ansicht="0" aria-pressed="${!an}">${istTLSatz(me) ? "Teamleiter" : "Normal"}</button>
+        <button type="button" data-ansicht="1" aria-pressed="${an}">Admin</button>
+      </div>
+      <p class="hinweis">${an
+        ? "Admin: alle Berater, KB Delete und Artikelkatalog. Die Teamprovision rechnet weiter nur mit deinem eigenen Team."
+        : "Teamleiter: nur dein eigenes Team."}</p>`;
+    box.insertBefore(ansicht, box.children[1] || null);
+    ansicht.querySelectorAll('[data-ansicht]').forEach(b=> b.onclick = ()=>{
+      store.set('bw-adminmodus', b.dataset.ansicht === "1");
+      if(typeof renderMenu === "function") renderMenu();
+      renderAll();
+      renderProfil();
+    });
+  }
+
   const hinweis = t => { const p = document.getElementById('rsHinweis'); p.textContent = t; p.hidden = !t; };
   document.getElementById('rsHilfe').onclick = ()=>{ location.hash = 'faq'; };
   document.getElementById('rsPinZeig').onclick = async ()=>{
@@ -62,12 +85,6 @@ renderProfil = async function(){
 };
 
 /* ---------- 2 · Nichtkauf: nur der Grund ---------- */
-/* Deine sechs Gründe bleiben, dazu vier, die sich mit ihnen nicht überschneiden */
-[["will es sich überlegen","#8FBF9F"],["hat schon ein vergleichbares Gerät","#6FC3A0"],
- ["sieht keinen Bedarf","#9FB4E8"],["will nichts an der Tür entscheiden","#D8C48A"]].forEach(([g,c])=>{
-  if(!NK_GRUENDE.includes(g)) NK_GRUENDE.push(g);
-  if(typeof NK_FARBE === "object" && NK_FARBE && !NK_FARBE[g]) NK_FARBE[g] = c;
-});
 
 function nkGrundHTML(n){
   const gew = n.nkgruende || [];

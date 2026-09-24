@@ -25,7 +25,7 @@ function renderProv(){
       <p class="sub">Vertriebsmonat ${vm.idx} im ${vm.quartal}. Quartal · KW ${vm.startW}–${vm.endW} · ${vm.weeks} Wochen · ${fmt(vm.from)} – ${fmt(vm.to)}</p>
       <div class="kpis zwei">
         ${kpi("Festgebietsbonus", p.stufe, p.next ? `noch ${eur(p.next.fehlt)} € netto bis ${p.next.pct} %` : "höchste Stufe erreicht")}
-        ${kpi("K70 Warenkredit", p.warenkredit ? "−"+eur(p.warenkredit)+" €" : "–", `netto aus ${eur(u.k70ein)} € brutto`)}
+        ${kpi("K70 Warenkredit", p.warenkredit ? "−"+eur(p.warenkredit)+" €" : "–")}
         ${kpi("Provision inkl. Bonus", eur(p.prov+p.vers)+" €", `${eur(p.prov)} € plus ${eur(p.vers)} € Bonus`,"hero")}
         ${kpi("Gesamte Überweisung", eur(p.gesamt)+" €", p.uebertrag ? "nichts zur Auszahlung" : "abzüglich Warenkredit","hero")}
       </div>

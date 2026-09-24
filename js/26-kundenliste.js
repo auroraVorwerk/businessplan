@@ -10,7 +10,7 @@ function kundenListe(){
   const map = new Map();
   Object.keys(entries).forEach(k=>{
     const e = entries[k];
-    if(!["kunde","premium"].includes(e.kind)) return;
+    if(!["kunde","premium","distanz"].includes(e.kind)) return;   // Distanzverkauf zählt als Kunde
     if(!(e.nachname||"").trim()) return;
     const [tag, h] = k.split("|");
     const id = kundeId(e);
