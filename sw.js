@@ -2,7 +2,7 @@
    VERSION bei jedem Hochladen um eins erhöhen. Der Rest läuft von allein:
    das Gerüst kommt sofort aus dem Zwischenspeicher und wird im Hintergrund
    erneuert, die Daten holt immer Firebase. */
-const VERSION = "dbp-v16";
+const VERSION = "dbp-v17";
 const DATEIEN = [
   "./",
   "./index.html",
@@ -15,7 +15,7 @@ const DATEIEN = [
   "./css/design.css?v=15",
   "./css/feinschliff.css?v=15",
   "./css/planer-a.css?v=15",
-  "./css/feinschliff2.css?v=15",
+  "./css/feinschliff2.css?v=17",
   "./css/verkaeufe.css?v=16",
   "./js/01-konstanten.js",
   "./js/02-datum.js",
@@ -49,7 +49,7 @@ const DATEIEN = [
   "./js/30-zaehlen.js",
   "./js/31-hilfe.js",
   "./js/32-start.js",
-  "./js/33-planer.js?v=15",
+  "./js/33-planer.js?v=17",
   "./js/34-messe.js?v=8",
   "./js/35-wochenmeldung.js?v=8",
   "./js/36-heute.js?v=8",
@@ -57,7 +57,7 @@ const DATEIEN = [
   "./js/38-team.js?v=10",
   "./js/39-rest.js?v=15",
   "./js/41-ergaenzungen.js?v=15",
-  "./js/42-verkaeufe.js?v=16"
+  "./js/42-verkaeufe.js?v=17"
 ];
 
 self.addEventListener("install", ev=>{
