@@ -82,8 +82,9 @@ function meldungDaten(start){
   });
   einkaeufe.forEach(e=>{ if(e.datum >= von && e.datum <= bis) m.k70ein += num(e.brutto); });
 
-  /* Aktiv: in dieser Woche wurde gearbeitet */
-  m.aktiv = (m.termine + m.pci + m.promoFG + m.promoWG + m.messen + m.einheiten) > 0;
+  /* Aktiv: in dieser Woche wurde mindestens eine Einheit verkauft.
+     Umsatz allein genuegt nicht mehr - gezaehlt werden nur Einheiten. */
+  m.aktiv = m.einheiten > 0;
 
   /* Prognose aus den eigenen Zahlen der letzten 13 Wochen */
   const q = quoten(13).termine;

@@ -244,7 +244,7 @@ function renderTeam(){
   const planer = z.voll
     ? `<div class="tmblock"><h4>Planer · ${viewUser.name}</h4>
         <div class="tagbar" id="tmTagbar"></div>
-        <div class="board"><div class="scroller"><div class="grid">${v.gridHtml}</div></div></div></div>`
+        <div class="tmplaner">${v.gridHtml}</div></div>`
     : "";
   box.innerHTML = kopf + planer + v.meld;
   const pd = document.getElementById('tmPotDruck');
@@ -267,7 +267,7 @@ function tmTagbar(tage, voll){
   bar.querySelectorAll('[data-tmtag]').forEach(b=> b.onclick = ()=>{
     tagWahl = +b.dataset.tmtag;
     setzeTagWahl();
-    bar.querySelectorAll('[data-tmtag]').forEach(x=> x.setAttribute('aria-pressed', +x.dataset.tmtag === tagWahl));
+    renderTeam();                 /* der Planer des Mitglieds muss mitwandern */
   });
 }
 /* Statistik eines Mitglieds: Woche wählen, Blatt bauen, drucken.
