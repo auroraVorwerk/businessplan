@@ -1,0 +1,64 @@
+/* =====================================================================
+   Feinschliff 3 · Update 22
+   Abstände in den Fenstern am iPad und am großen Bildschirm.
+
+   Bisher galt im Querformat nur  .sheetkoerper{padding:0 22px}  – also
+   gar kein Abstand nach oben und unten. Dadurch klebte das erste Feld
+   an der Trennlinie unter der Überschrift und der letzte Knopf an der
+   Unterkante. Am Handy war das längst geregelt, im Querformat nicht.
+   ===================================================================== */
+
+@media (orientation:landscape) and (min-width:700px){
+
+  /* Kopf: etwas mehr Luft, damit Titel und Zeile nicht zusammenrücken */
+  .sheet header{ padding:22px 26px 16px }
+
+  /* Körper: Abstand nach oben zur Trennlinie und nach unten zum Fuß */
+  .sheetkoerper{ padding:20px 26px 12px }
+
+  /* Fenster ohne eigenen Fuß brauchen unten mehr, sonst klebt der
+     letzte Knopf an der Kante. */
+  .sheetkoerper:not(:has(+ .sheetfuss)){ padding-bottom:24px }
+
+  /* Fuß: gleiche Seitenabstände wie der Körper */
+  .sheetfuss{ padding:16px 26px 20px }
+
+  /* Der erste Block im Körper hat oft schon einen eigenen Abstand –
+     doppelt wäre zu viel. */
+  .sheetkoerper > :first-child{ margin-top:0 }
+  .sheetkoerper > .grp:first-child,
+  .sheetkoerper > .sect:first-child{ margin-top:0 }
+
+  /* Letzter Block: kein überflüssiger Rand unten */
+  .sheetkoerper > :last-child{ margin-bottom:0 }
+
+  /* Abstand zwischen den Blöcken im Fenster vereinheitlichen */
+  .sheetkoerper > .grp + .grp,
+  .sheetkoerper > .sect + .sect,
+  .sheetkoerper > .grp + .sect,
+  .sheetkoerper > .sect + .grp{ margin-top:18px }
+
+  /* Knopfreihen im Körper bekommen oben Luft */
+  .sheetkoerper > .actions{ margin-top:18px }
+
+  /* Hinweistexte im Fenster: lesbarer Zeilenabstand, etwas Abstand */
+  .sheet .hinweis{ line-height:1.55; margin-top:12px }
+  .sheet .hinweis:last-child{ margin-bottom:2px }
+
+  /* Felderpaare nicht zu eng */
+  .sheet .row2{ gap:14px }
+  .sheet .field + .field{ margin-top:0 }
+  .sheet .sect > .lb{ margin-bottom:8px; display:block }
+}
+
+/* Sehr hohe Fenster am iPad: der Körper darf scrollen, aber der
+   Scrollrand soll nicht direkt am Text kleben. */
+@media (orientation:landscape) and (min-width:700px){
+  .sheetkoerper{ scrollbar-gutter:stable }
+}
+
+/* Breiter Bildschirm: das Fenster darf etwas mehr Platz nehmen,
+   dann passen zweispaltige Felder ohne Umbruch nebeneinander. */
+@media (orientation:landscape) and (min-width:1100px){
+  .sheet{ width:min(560px, 100%) }
+}

@@ -1,9 +1,6 @@
 /* ================= Profil, Löschen, Sitzungspflege ================= */
 const TAG = 86400000;
-async function pinLesen(dk){
-  if(!db) return "";
-  try{ return (await db.ref('secret/'+dk+'/pin').once('value')).val() || ""; }catch(e){ return ""; }
-}
+async function pinLesen(){ return ""; }          /* PIN ausgebaut (Update 23) */
 async function renderProfil(){
   const box = document.getElementById('profil');
   if(!box || !me) return;
@@ -29,9 +26,6 @@ async function renderProfil(){
         <p class="hinweis" style="margin-top:0">Wer weniger als 52 Wochen dabei ist, gilt als Berufseinsteiger —
           davon hängen die Ziele ab.</p>
         ${me.mailPending && !me.mail ? `<p class="hinweis">Für ${me.mailPending} steht die Bestätigung noch aus.</p>` : ""}
-        <div class="field pw"><label for="pfPin">Dein PIN</label>
-          <input id="pfPin" type="password" value="${pin || ""}" placeholder="${pin ? "" : "noch nicht hinterlegt"}" readonly>
-          <button type="button" class="eye" data-eye="pfPin" aria-label="PIN anzeigen">${EYE_AN}</button></div>
       </div>
       <p class="err" id="pfErr" hidden></p>
       <div class="ah4">Was gerade läuft</div>
@@ -58,19 +52,20 @@ async function renderProfil(){
             sind die Animationen der App aus. Mit „Immer an“ laufen sie trotzdem.</p></div>
       </div>
       <div class="actions"><button class="btn primary" id="pfSave">Speichern</button></div>
-      <div class="actions"><button class="btn" id="pfPinNeu">${pin ? "PIN ändern" : "PIN festlegen"}</button></div>
-      ${KALENDER_BASIS && me.feedToken ? `
+      ${KALENDER_BASIS && meinFeed ? `
       <div class="ah4">Apple Kalender</div>
       <div class="grp">
-        <p class="hinweis" style="margin-top:0">Deine Termine erscheinen automatisch im Kalender und im Widget.
+        <p class="hinweis" style="margin-top:0"><b>Neue Kalenderadresse seit dem 09.10.2026.</b> Hattest du vorher schon abonniert,
+          lösch das alte Abo im Kalender und abonniere hier einmal neu — das alte liefert keine Termine mehr.</p>
+        <p class="hinweis">Deine Termine erscheinen automatisch im Kalender und im Widget.
           Einmal antippen genügt — der Kalender fragt dann nach der Bestätigung.</p>
         <div class="actions">
-          <a class="btn abo apple" href="webcal://${KALENDER_BASIS.replace(/^https?:\/\//,"")}/kalender/${me.feedToken}.ics">
+          <a class="btn abo apple" href="webcal://${KALENDER_BASIS.replace(/^https?:\/\//,"")}/kalender/${meinFeed}.ics">
             <span class="logo">${APPLE_LOGO}</span>Im Apple Kalender abonnieren</a>
         </div>
         <div class="actions">
           <a class="btn abo google" target="_blank" rel="noopener"
-             href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent("webcal://" + KALENDER_BASIS.replace(/^https?:\/\//,"") + "/kalender/" + me.feedToken + ".ics")}">
+             href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent("webcal://" + KALENDER_BASIS.replace(/^https?:\/\//,"") + "/kalender/" + meinFeed + ".ics")}">
             <span class="logo">${GOOGLE_LOGO}</span>Im Google Kalender abonnieren</a>
         </div>
         <div class="actions"><button class="btn" id="pfFeedCopy">Adresse kopieren</button></div>
@@ -81,7 +76,7 @@ async function renderProfil(){
       </div>` : ""}
       <p class="hinweis">${me.mail
         ? "Passwort vergessen läuft für dich per E-Mail — du bekommst dann einen Link von Firebase."
-        : "Solange keine E-Mail hinterlegt ist, läuft „Passwort vergessen“ über deinen PIN. Das Passwort selbst kann niemand einsehen."}</p>
+        : "<b>Bitte trag deine E-Mail-Adresse ein.</b> Ohne sie kann „Passwort vergessen“ nur der Admin über einen Neuanfang des Zugangs lösen."}</p>
       <div class="sicherung">
         <p class="hinweis"><button type="button" class="mini" id="pfBackup">Daten sichern</button>
           legt eine Datei mit allen deinen Einträgen auf dem Gerät ab.</p>
@@ -89,7 +84,7 @@ async function renderProfil(){
           ersetzt alle Einträge durch den Stand aus einer solchen Datei — auch aus einer Serversicherung.
           <input type="file" id="pfDatei" accept=".json,application/json" hidden></p>
         <p class="hinweis"><button type="button" class="mini gefahr" id="pfLeeren">Alle Einträge zurücksetzen</button>
-          löscht Termine, Listen und Zahlen — Profil, PIN und Kalender bleiben.</p>
+          löscht Termine, Listen und Zahlen — Profil und Kalender bleiben.</p>
       </div>
       <p class="buildzeile">Stand ${BUILD}</p>
     </div>`;
@@ -135,7 +130,7 @@ async function renderProfil(){
 
   const leeren = document.getElementById('pfLeeren');
   if(leeren) leeren.onclick = ()=>{
-    if(!confirm("Alle Termine, Listen, Nachträge und Zahlen löschen?\n\nProfil, PIN und Kalenderabo bleiben erhalten.")) return;
+    if(!confirm("Alle Termine, Listen, Nachträge und Zahlen löschen?\n\nProfil und Kalenderabo bleiben erhalten.")) return;
     if(!confirm("Wirklich alles zurücksetzen? Das lässt sich nicht rückgängig machen.")) return;
     const vorher = clean(dataBlob());
     applyData(null);
@@ -179,10 +174,9 @@ async function renderProfil(){
     settings.bewegung = b.dataset.bewegung;
     bewegungSetzen(); saveData(); renderProfil();
   });
-  document.getElementById('pfPinNeu').onclick = pinDialog;
   const fc = document.getElementById('pfFeedCopy');
   if(fc) fc.onclick = ()=>{
-    const url = KALENDER_BASIS + "/kalender/" + me.feedToken + ".ics";
+    const url = KALENDER_BASIS + "/kalender/" + meinFeed + ".ics";
     navigator.clipboard.writeText(url)
       .then(()=>{ fc.textContent = "Kopiert"; setTimeout(()=>fc.textContent="Adresse kopieren",1500); })
       .catch(()=>{ fc.textContent = "Kopieren nicht möglich"; });
@@ -212,7 +206,7 @@ function pinDialog(){
       try{
         if(!await anmelden(me, me.dk, pw)) throw new Error('pw');   // Passwort prüfen
         await pinSpeichern(pin, me.dk, pw);
-        await db.ref('secret/'+me.dk).set({pin});
+        throw new Error('Die PIN-Funktion gibt es nicht mehr.');
         closeModal(); renderProfil();
       }catch(e2){ zeig(fehlerkurz(e2) === "kein Schreibrecht – Firebase-Regeln prüfen"
         ? "Kein Schreibrecht — bitte die Firebase-Regeln prüfen."
@@ -269,7 +263,7 @@ async function profilSpeichern(){
 async function alleNutzer(){
   if(!db) return Object.values(localUsers());
   const snap = await db.ref('users').once('value');
-  return Object.values(snap.val() || {});
+  return Object.values(entschaerfen(snap.val()) || {});
 }
 async function renderDelete(){
   const box = document.getElementById('kbdel');
@@ -368,14 +362,14 @@ async function loeschenStarten(dk, vor, nach){
        <b>${u.dk}</b> unwiderruflich aus dem System löschen wollen?</div>
      <p class="hinweis">Alle Termine, Kundendaten, Auswertungen und der Zugang werden entfernt.</p>`,
     async ()=>{
+      /* Reihenfolge zählt: die Regeln prüfen beim Löschen den Teamleiter-
+         Vermerk im Nutzersatz - der wird deshalb zuletzt entfernt. */
       const schritte = [
         ['deleted/'+dk, {am:Date.now(), von:me.dk}],
-        ['data/'+dk, null],
-        ['recovery/'+dk, null],
-        ['secret/'+dk, null],
-        ['users/'+dk, null]
+        ['data/'+dk, null]
       ];
       if(u.uid) schritte.push(['uids/'+u.uid, null]);
+      schritte.push(['users/'+dk, null]);
       const gescheitert = [];
       try{
         for(const [pfad, wert] of schritte){

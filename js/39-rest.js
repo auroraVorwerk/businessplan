@@ -29,10 +29,8 @@ renderProfil = async function(){
     <p class="sub">Nur für dich sichtbar. Angemeldet wird immer mit der DK-Nummer.</p>
     <div class="rsliste">
       <div class="rszeile"><span>DK-Nummer</span><b>${me.dk.replace(/^TL-/,"")}</b></div>
-      <div class="rszeile"><span>PIN</span><b id="rsPin">••••</b>
-        <button class="mini" id="rsPinZeig">anzeigen</button><button class="mini" id="rsPinNeu">ändern</button></div>
       <div class="rszeile"><span>Passwort</span><b id="rsPw">••••••••</b>
-        <button class="mini" id="rsPwZeig">anzeigen</button><button class="mini" id="rsPwNeu">ändern</button></div>
+        <button class="mini" id="rsPwNeu">ändern</button></div>
     </div>
     <p class="hinweis" id="rsHinweis" hidden></p>`;
   const hilfe = document.createElement('div');
@@ -68,19 +66,6 @@ renderProfil = async function(){
 
   const hinweis = t => { const p = document.getElementById('rsHinweis'); p.textContent = t; p.hidden = !t; };
   document.getElementById('rsHilfe').onclick = ()=>{ location.hash = 'faq'; };
-  document.getElementById('rsPinZeig').onclick = async ()=>{
-    const pin = await pinLesen(me.dk);
-    document.getElementById('rsPin').textContent = pin || "nicht hinterlegt";
-  };
-  document.getElementById('rsPwZeig').onclick = async ()=>{
-    hinweis("");
-    try{
-      const pin = await pinLesen(me.dk);
-      if(!pin) return hinweis("Ohne hinterlegten PIN lässt sich das Passwort nicht anzeigen. Lege über „ändern“ beim PIN einen an.");
-      document.getElementById('rsPw').textContent = await passwortOeffnen(pin);
-    }catch(e){ hinweis("Das Passwort ließ sich nicht öffnen. Setz PIN oder Passwort einmal neu, dann klappt es wieder."); }
-  };
-  document.getElementById('rsPinNeu').onclick = ()=> pinAendernDialog();
   document.getElementById('rsPwNeu').onclick  = ()=> passwortAendernDialog();
 };
 
@@ -330,8 +315,7 @@ function pinAendernDialog(){
       if(!/^\d{4}$/.test(pin)) return zeig("Der PIN besteht aus genau vier Ziffern.");
       try{
         await bestaetigePasswort(pw);
-        await db.ref('secret/'+me.dk).set({pin});
-        await pinSpeichern(pin, me.dk, pw);
+        throw new Error("Die PIN-Funktion gibt es nicht mehr.");
         closeModal(); renderProfil();
       }catch(e){ zeig(zugangFehler(e)); }
     }, "Speichern");
@@ -348,13 +332,11 @@ function passwortAendernDialog(){
       const neu2 = document.getElementById('ppNeu2').value;
       const err = document.getElementById('ppErr');
       const zeig = t => { err.textContent = t; err.hidden = false; };
-      if(neu.length < 6) return zeig("Das neue Passwort braucht mindestens 6 Zeichen.");
+      if(neu.length < 8) return zeig("Das neue Passwort braucht mindestens 8 Zeichen.");
       if(neu !== neu2) return zeig("Die beiden neuen Passwörter stimmen nicht überein.");
       try{
         const u = await bestaetigePasswort(alt);
         await u.updatePassword(neu);
-        const pin = await pinLesen(me.dk);
-        if(pin) await pinSpeichern(pin, me.dk, neu);    // damit „anzeigen“ das neue zeigt
         closeModal(); renderProfil();
       }catch(e){ zeig(zugangFehler(e)); }
     }, "Ändern");

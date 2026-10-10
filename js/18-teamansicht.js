@@ -344,12 +344,10 @@ setTimeout(()=>{ if(!bootFertig) zeigeAnmeldung(); }, 12000);
 renderLogin();
 if(auth){
   auth.onAuthStateChanged(async user=>{
-    if(!user){
-      zeigeAnmeldung();
-      try{ await auth.signInAnonymously(); }catch(err){}   // erlaubt die Prüfungen im Anmeldefenster
-      return;
-    }
-    if(user.isAnonymous){ zeigeAnmeldung(); return; }
+    if(!user){ zeigeAnmeldung(); return; }
+    /* Anonyme Anmeldung gibt es seit Update 23 nicht mehr - sie gab jedem
+       Besucher Leserechte. Alte anonyme Sitzungen werden beendet. */
+    if(user.isAnonymous){ try{ await auth.signOut(); }catch(e){} zeigeAnmeldung(); return; }
     try{
       const dk = (await db.ref('uids/'+user.uid).once('value')).val();
       const u  = dk ? await userGet(dk) : null;

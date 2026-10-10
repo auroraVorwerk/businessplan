@@ -38,6 +38,26 @@ try{
 /* Aus der DK-Nummer wird eine technische Mailadresse für Firebase Auth */
 const mailOf = dk => dk.toLowerCase().replace(/[^a-z0-9]/g,"") + "@bunte-woche.app";
 
+/* ---------- Entschärfen (Update 23) ----------
+   Alles, was aus der Datenbank kommt, wird an vielen Stellen direkt in die
+   Seite geschrieben. Damit ein präparierter Name oder eine Notiz dort nie als
+   Programmcode wirken kann, werden die vier Zeichen, mit denen HTML beginnt
+   oder Attribute verlässt, durch harmlose Ersatzzeichen getauscht:
+     <  >  "  '   werden zu   ‹  ›  ”  ’
+   Das gilt für Werte und Schlüssel, für eigene und fremde Daten gleich. */
+const ENTSCH = {"<":"‹", ">":"›", '"':"”", "'":"’"};
+const entschaerfeText = t => String(t).replace(/[<>"']/g, z => ENTSCH[z]);
+function entschaerfen(v){
+  if(typeof v === "string") return /[<>"']/.test(v) ? entschaerfeText(v) : v;
+  if(Array.isArray(v)) return v.map(entschaerfen);
+  if(v && typeof v === "object"){
+    const o = {};
+    Object.keys(v).forEach(k => { o[/[<>"']/.test(k) ? entschaerfeText(k) : k] = entschaerfen(v[k]); });
+    return o;
+  }
+  return v;
+}
+
 /* Lokaler Speicher – schlägt er fehl, läuft die App trotzdem */
 const store = {
   get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
@@ -76,7 +96,7 @@ function localUsers(){ const u = store.get('bw-users'); return u || {...SEED_USE
 async function userGet(dk){
   if(db){
     const s = await db.ref('users/'+dk).once('value');   // Fehler bewusst weiterreichen
-    return s.val();
+    return entschaerfen(s.val());
   }
   return localUsers()[dk] || null;
 }
@@ -88,6 +108,7 @@ async function userGet(dk){
 async function userSet(u, entferne){
   if(db){
     const paket = clean(u) || {};
+    delete paket.feedToken;                      // liegt seit Update 23 geschützt unter privat/
     (entferne || []).forEach(k => { paket[k] = null; });
     await db.ref('users/'+u.dk).update(paket);
     return;
@@ -113,6 +134,7 @@ function dataBlob(){
   return {entries, potenzial, empfehlungen, wiedervorlagen, papierkorb, nachtrag, verlauf, archiv, einkaeufe, inventur, settings, wunsch, fahrten, jobtickets, teamumsatz, ts:serverJetzt()};
 }
 function applyData(d){
+  d = entschaerfen(d);                                   // auch Sicherungsdateien und lokaler Stand
   Object.keys(entries).forEach(k=>delete entries[k]);
   Object.assign(entries, (d && d.entries) || {});
   potenzial.length = 0; ((d && d.potenzial) || []).forEach(x=>potenzial.push(x));
@@ -209,7 +231,7 @@ async function loadData(dk, fremd){
   try{
     const s = await db.ref('data/'+dk).once('value');
     if(!fremd) cloudOk = true;
-    const wolke = s.val();
+    const wolke = entschaerfen(s.val());
     if(!fremd) liveStart(dk);                                 // ab hier wird mitgehört
     if(!wolke) return lokal;                                  // in der Cloud noch nichts
     if(!lokal)  return wolke;
@@ -377,7 +399,7 @@ function liveStart(dk){
     liveRef = db.ref('data/'+dk);
     liveRef.on('value', s=>{
       if(!dataReady || fremdAktiv) return;
-      const wolke = s.val();
+      const wolke = entschaerfen(s.val());
       if(!wolke) return;
       if(+wolke.ts && +wolke.ts === eigenerTs) return;   // das eigene Echo
       if(warteZahl() || schreibtGerade) return;          // erst das Eigene sichern

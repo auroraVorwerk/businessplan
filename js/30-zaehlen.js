@@ -97,7 +97,7 @@ function zaehlZeichnen(){
           <div class="field vorschlagfeld" style="flex:1 1 65%"><label for="zk_str">Straße</label>
             <input id="zk_str" data-adr="zk" autocomplete="off" spellcheck="false">
             <div class="vorschlaege" id="zk_vorschlaege" hidden></div></div>
-          <div class="field" style="flex:0 0 30%"><label for="zk_hnr">Nr.</label><input id="zk_hnr" inputmode="numeric"></div>
+          <div class="field" style="flex:0 0 32%"><label for="zk_hnr">Nr.</label><input id="zk_hnr" inputmode="text" autocapitalize="off" spellcheck="false" placeholder="5b"></div>
         </div>
         <div class="row2">
           <div class="field" style="flex:0 0 42%"><label for="zk_plz">PLZ</label><input id="zk_plz" inputmode="numeric" maxlength="5"></div>

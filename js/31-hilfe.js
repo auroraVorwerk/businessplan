@@ -86,7 +86,7 @@ const TOUR = [
    x:"Alle Vertriebsmonate im Vergleich zum Vorjahr. Warst du vor der App schon dabei, trag deine Zahlen hier nach — sie zählen für die Goldene Nadel mit."},
 
   {seite:"profil", ziel:"#profil .asec", t:"Profil",
-   x:"Name, PIN, hell oder dunkel und das Kalenderabo für Apple oder Google. Wichtig für die Ziele: trag dein Einstellungsdatum ein. Wer weniger als 52 Wochen dabei ist, gilt als Berufseinsteiger. Ganz unten sicherst du bei Bedarf deine Daten."},
+   x:"Name, E-Mail-Adresse, hell oder dunkel und das Kalenderabo für Apple oder Google. Wichtig für die Ziele: trag dein Einstellungsdatum ein. Wer weniger als 52 Wochen dabei ist, gilt als Berufseinsteiger. Ganz unten sicherst du bei Bedarf deine Daten."},
 
   {seite:"teamumsatz", ziel:"#tumsatz .asec", nur:"tl", t:"Nur für Teamleiter",
    x:"Unter Teamumsatz trägst du je Vertriebsmonat den Umsatz deines Teams ein und getrennt davon den deiner Berufseinsteiger — beides zählt bei deinen Zielen. Unter Teammitglieder siehst du die Woche jedes Beraters."},

@@ -155,7 +155,7 @@ function kontaktBearbeiten(p, liste, mitGeraeten, istNeu){
          <div class="field vorschlagfeld" style="flex:1 1 65%"><label>Straße</label>
            <input id="kb_str" data-adr="kb" value="${p.str||p.strasse||""}" autocomplete="off">
            <div class="vorschlaege" id="kb_vorschlaege" hidden></div></div>
-         <div class="field" style="flex:0 0 30%"><label>Nr.</label><input id="kb_hnr" value="${p.hnr||""}" inputmode="numeric"></div>
+         <div class="field" style="flex:0 0 32%"><label>Nr.</label><input id="kb_hnr" value="${p.hnr||""}" inputmode="text" autocapitalize="off" spellcheck="false" placeholder="5b"></div>
        </div>
        <div class="row2">
          <div class="field" style="flex:0 0 42%"><label>PLZ</label><input id="kb_plz" value="${p.plz||""}" inputmode="numeric" maxlength="5"></div>

@@ -10,12 +10,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Digitaler Businessplan">
 <title>Digitaler Businessplan</title>
+<!-- Sicherheitsregeln für den Browser (Update 23): Programmcode nur von hier
+     und vom Firebase-SDK, Verbindungen nur zu den bekannten Diensten.
+     Schriften kommen nicht mehr von Google, die App nutzt die Systemschrift. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://*.firebasedatabase.app; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://photon.komoot.io https://bunte-woche-kalender.aurorabrosen.workers.dev; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src https://*.firebasedatabase.app https://businessplan-digital.firebaseapp.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="no-referrer">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <!-- Zwei Stilblaetter, in dieser Reihenfolge: app.css ist der fruehere
      <style>-Block aus der einen grossen Datei, ui.css liegt darueber und
      ueberschreibt gezielt. Die Zahl hinter ?v= MUSS bei jeder Aenderung
@@ -32,6 +34,8 @@
 <link rel="stylesheet" href="css/feinschliff2.css?v=17">
 <link rel="stylesheet" href="css/verkaeufe.css?v=16">
 <link rel="stylesheet" href="css/update18.css?v=20">
+<link rel="stylesheet" href="css/feinschliff3.css?v=22">
+<link rel="stylesheet" href="css/animationen.css?v=22">
 </head>
 <body>
 
@@ -188,12 +192,6 @@
   <button class="tab tabmehr" id="tabMehr" aria-label="Menü öffnen"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><i>Mehr</i></button>
 </nav>
 
-<script>
-/* Untere Leiste am Handy: "Mehr" oeffnet das vollstaendige Menue.
-   Die vier Direktpunkte tragen die Klasse navlink und werden deshalb
-   von der vorhandenen Seitenlogik automatisch mit hervorgehoben. */
-document.getElementById("tabMehr").onclick = () => document.getElementById("burger").click();
-</script>
 
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
   <div class="back" data-close></div>
@@ -207,19 +205,19 @@ document.getElementById("tabMehr").onclick = () => document.getElementById("burg
 <script src="js/04-raster.js?v=1"></script>
 <script src="js/05-dialog.js?v=1"></script>
 <script src="js/06-nachbereitung.js?v=1"></script>
-<script src="js/07-potenzial.js?v=1"></script>
+<script src="js/07-potenzial.js?v=22"></script>
 <script src="js/08-wiedervorlage.js?v=1"></script>
-<script src="js/09-dialogschritte.js?v=8"></script>
+<script src="js/09-dialogschritte.js?v=22"></script>
 <script src="js/10-statistik.js?v=16"></script>
 <script src="js/11-druck.js?v=1"></script>
-<script src="js/12-vertriebsmonat-provision.js?v=1"></script>
+<script src="js/12-vertriebsmonat-provision.js?v=23"></script>
 <script src="js/13-provisionsrechner.js?v=14"></script>
 <script src="js/14-provisionswunsch.js?v=1"></script>
 <script src="js/15-auswertungen.js?v=1"></script>
-<script src="js/16-cloud-konto.js?v=13"></script>
-<script src="js/17-anmeldung.js?v=3"></script>
-<script src="js/18-teamansicht.js?v=18"></script>
-<script src="js/19-profil.js?v=3"></script>
+<script src="js/16-cloud-konto.js?v=23"></script>
+<script src="js/17-anmeldung.js?v=23"></script>
+<script src="js/18-teamansicht.js?v=23"></script>
+<script src="js/19-profil.js?v=23"></script>
 <script src="js/20-wochenmeldung.js?v=1"></script>
 <script src="js/21-adresse.js?v=1"></script>
 <script src="js/22-inventur.js?v=1"></script>
@@ -230,8 +228,8 @@ document.getElementById("tabMehr").onclick = () => document.getElementById("burg
 <script src="js/27-abgleich-menue.js?v=1"></script>
 <script src="js/28-heute.js?v=5"></script>
 <script src="js/29-jahresrueckblick.js?v=1"></script>
-<script src="js/30-zaehlen.js?v=1"></script>
-<script src="js/31-hilfe.js?v=1"></script>
+<script src="js/30-zaehlen.js?v=22"></script>
+<script src="js/31-hilfe.js?v=23"></script>
 <script src="js/32-start.js?v=1"></script>
 <script src="js/33-planer.js?v=17"></script>
 <script src="js/34-messe.js?v=8"></script>
@@ -239,11 +237,14 @@ document.getElementById("tabMehr").onclick = () => document.getElementById("burg
 <script src="js/36-heute.js?v=8"></script>
 <script src="js/37-inventur.js?v=8"></script>
 <script src="js/38-team.js?v=10"></script>
-<script src="js/39-rest.js?v=15"></script>
+<script src="js/39-rest.js?v=23"></script>
 <script src="js/41-ergaenzungen.js?v=15"></script>
 <script src="js/42-verkaeufe.js?v=17"></script>
 <script src="js/43-anmeldungen-vian.js?v=19"></script>
 <script src="js/44-katalog.js?v=20"></script>
+<script src="js/45-animationen.js?v=21"></script>
+<script src="js/46-datenschutz.js?v=22"></script>
+<script src="js/47-sicherheit.js?v=23"></script>
 </body>
 </html>
 

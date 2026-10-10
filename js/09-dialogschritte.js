@@ -36,7 +36,7 @@ function startEdit(e){
   if(e.kind==="kunde" || e.kind==="premium"){
     let str = e.str, hnr = e.hnr;
     if(str === undefined){                                   // ältere Einträge aufteilen
-      const m = (e.strasse||"").match(/^(.*?)[\s,]+(\d+\s*[a-zA-Z]?)$/);
+      const m = (e.strasse||"").match(/^(.*?)[\s,]+(\d+\s*[a-zA-Z]{0,2}(?:\s*[-\/]\s*\d+\s*[a-zA-Z]{0,2})?)$/);
       str = m ? m[1] : (e.strasse||""); hnr = m ? m[2] : "";
     }
     Object.assign(draft.nb, {f_vor:e.vorname||"", f_nach:e.nachname||"", f_str:str||"", f_hnr:hnr||"",
@@ -258,7 +258,7 @@ function paintRoh(){
            <input id="f_str" data-adr="f" value="${n.f_str||""}" autocomplete="off" spellcheck="false">
            <div class="vorschlaege" id="f_vorschlaege" hidden></div></div>
          <div class="field" style="flex:0 0 30%"><label for="f_hnr">Hausnummer</label>
-           <input id="f_hnr" value="${n.f_hnr||""}" autocomplete="off" spellcheck="false" inputmode="numeric"></div>
+           <input id="f_hnr" value="${n.f_hnr||""}" autocomplete="off" spellcheck="false" inputmode="text" autocapitalize="off" placeholder="5b"></div>
        </div>
        <div class="row2 plzort"><div class="field" style="flex:0 0 42%"><label for="f_plz">PLZ</label>
          <input id="f_plz" value="${n.f_plz||""}" inputmode="numeric" maxlength="5" pattern="\\d{5}"></div>
@@ -407,7 +407,7 @@ function paintRoh(){
               <input id="emp${i}_str" data-emp="${i}|str" data-adr="emp${i}" value="${e.str||""}" autocomplete="off">
               <div class="vorschlaege" id="emp${i}_vorschlaege" hidden></div></div>
             <div class="field" style="flex:0 0 30%"><label>Nr.</label>
-              <input id="emp${i}_hnr" data-emp="${i}|hnr" value="${e.hnr||""}" autocomplete="off" inputmode="numeric"></div>
+              <input id="emp${i}_hnr" data-emp="${i}|hnr" value="${e.hnr||""}" autocomplete="off" inputmode="text" autocapitalize="off" spellcheck="false" placeholder="5b"></div>
           </div>
           <div class="row2">
             <div class="field" style="flex:0 0 42%"><label>PLZ</label>
