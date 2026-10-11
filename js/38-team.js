@@ -139,7 +139,7 @@ function tpHTML(vm, res, eigen){
     ${wechsel.length ? `<p class="hinweis">${wechsel.join(" · ")}</p>` : ""}
     ${fehler.length ? `<p class="hinweis">Nicht geladen: ${fehler.join(", ")}.</p>` : ""}
     <div class="tpgesamt">
-      <div><span>Eigene Auszahlung</span><b>${eur(eigen)} €</b></div>
+      <div><span>Eigene</span><b>${eur(eigen)} €</b></div>
       <div><span>Teamprovision</span><b>${eur(summe)} €</b></div>
       <div class="hero"><span>Gesamt</span><b>${eur(eigen + summe)} €</b></div>
     </div>

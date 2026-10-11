@@ -2,7 +2,7 @@
    VERSION bei jedem Hochladen um eins erhöhen. Der Rest läuft von allein:
    das Gerüst kommt sofort aus dem Zwischenspeicher und wird im Hintergrund
    erneuert, die Daten holt immer Firebase. */
-const VERSION = "dbp-v23";
+const VERSION = "dbp-v24";
 const DATEIEN = [
   "./",
   "./index.html",
@@ -22,6 +22,7 @@ const DATEIEN = [
   "./css/update18.css?v=20",
   "./css/feinschliff3.css?v=22",
   "./css/animationen.css?v=22",
+  "./css/update24.css?v=24",
   "./js/01-konstanten.js?v=1",
   "./js/02-datum.js?v=1",
   "./js/03-daten.js?v=11",
@@ -33,11 +34,11 @@ const DATEIEN = [
   "./js/09-dialogschritte.js?v=22",
   "./js/10-statistik.js?v=16",
   "./js/11-druck.js?v=1",
-  "./js/12-vertriebsmonat-provision.js?v=23",
+  "./js/12-vertriebsmonat-provision.js?v=24",
   "./js/13-provisionsrechner.js?v=14",
   "./js/14-provisionswunsch.js?v=1",
   "./js/15-auswertungen.js?v=1",
-  "./js/16-cloud-konto.js?v=23",
+  "./js/16-cloud-konto.js?v=24",
   "./js/17-anmeldung.js?v=23",
   "./js/18-teamansicht.js?v=23",
   "./js/19-profil.js?v=23",
@@ -59,8 +60,8 @@ const DATEIEN = [
   "./js/35-wochenmeldung.js?v=18",
   "./js/36-heute.js?v=8",
   "./js/37-inventur.js?v=8",
-  "./js/38-team.js?v=10",
-  "./js/39-rest.js?v=23",
+  "./js/38-team.js?v=24",
+  "./js/39-rest.js?v=24",
   "./js/41-ergaenzungen.js?v=15",
   "./js/42-verkaeufe.js?v=17",
   "./js/43-anmeldungen-vian.js?v=19",

@@ -42,14 +42,14 @@ renderProfil = async function(){
   box.appendChild(hilfe);
 
   /* Umschalter Teamleiter / Admin – nur für Zugänge mit Admin-Recht */
-  if(hatAdminRecht() && !box.querySelector('#rsAnsicht')){
+  if(hatAdminRecht() && !String(me.dk||"").startsWith("V-DK") && !box.querySelector('#rsAnsicht')){
     const an = adminModusAn();
     const ansicht = document.createElement('div');
     ansicht.className = 'asec'; ansicht.id = 'rsAnsicht';
     ansicht.innerHTML = `<h3>Ansicht</h3>
       <p class="sub">Du hast zusätzlich Admin-Rechte. Hier wechselst du, ohne dich abzumelden.</p>
       <div class="seg" role="group" aria-label="Ansicht">
-        <button type="button" data-ansicht="0" aria-pressed="${!an}">${istTLSatz(me) ? "Teamleiter" : "Normal"}</button>
+        <button type="button" data-ansicht="0" aria-pressed="${!an}">${istTLSatz(me) || istAdminSatz(me) ? "Teamleiter" : "Normal"}</button>
         <button type="button" data-ansicht="1" aria-pressed="${an}">Admin</button>
       </div>
       <p class="hinweis">${an

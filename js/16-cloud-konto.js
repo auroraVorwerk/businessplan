@@ -82,10 +82,15 @@ const rolleName = r => (r === "TL" || r === "Teamleader") ? "Teamleiter"
 /* Wer zusätzlich admin:true im Datensatz hat, bleibt in seiner eigenen Rolle
    und kann in den Einstellungen auf die Admin-Ansicht umschalten – ohne sich
    ab- und wieder anzumelden. Die Wahl gilt je Gerät. */
-const hatAdminRecht = () => !!me && (me.admin === true || me.admin === "true");
+/* Update 24: Admin-Rechte (admin:true ODER rolle "Admin") schalten die
+   Admin-Ansicht nur noch frei. Aktiv ist sie erst, wenn in den Einstellungen
+   "Admin" gewählt ist - sonst sieht man die App wie ein Teamleiter (eigenes
+   Team, keine Verkaufsschlager-Kästchen, kein Katalog-Bearbeiten).
+   Nur der reine Admin-Zugang V-DK… ist immer im Admin-Modus. */
+const hatAdminRecht = () => !!me && (me.admin === true || me.admin === "true" || istAdminSatz(me));
 const adminModusAn  = () => hatAdminRecht() && store.get('bw-adminmodus') === true;
-const istAdmin      = () => istAdminSatz(me) || adminModusAn();
-const istTeamleiter = () => !!me && (istTLSatz(me) || istAdmin());
+const istAdmin      = () => (!!me && String(me.dk||"").startsWith("V-DK")) || adminModusAn();
+const istTeamleiter = () => !!me && (istTLSatz(me) || hatAdminRecht());
 /* Neue Zugaenge sind immer Kundenberater. Nur der Adminzugang haengt noch
    an der Nummer, alles andere vergibt der Admin im Profil. */
 const rolleAus = dk => String(dk).startsWith("V-DK") ? ROLLE_ADMIN : ROLLE_KB;
