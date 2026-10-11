@@ -2,7 +2,7 @@
    VERSION bei jedem Hochladen um eins erhöhen. Der Rest läuft von allein:
    das Gerüst kommt sofort aus dem Zwischenspeicher und wird im Hintergrund
    erneuert, die Daten holt immer Firebase. */
-const VERSION = "dbp-v25";
+const VERSION = "dbp-v26";
 const DATEIEN = [
   "./",
   "./index.html",
@@ -23,7 +23,8 @@ const DATEIEN = [
   "./css/feinschliff3.css?v=22",
   "./css/animationen.css?v=22",
   "./css/update24.css?v=24",
-  "./css/motion.css?v=25",
+  "./css/motion.css?v=26",
+  "./css/fenster.css?v=26",
   "./js/01-konstanten.js?v=1",
   "./js/02-datum.js?v=1",
   "./js/03-daten.js?v=11",
@@ -35,7 +36,7 @@ const DATEIEN = [
   "./js/09-dialogschritte.js?v=22",
   "./js/10-statistik.js?v=16",
   "./js/11-druck.js?v=1",
-  "./js/12-vertriebsmonat-provision.js?v=25",
+  "./js/12-vertriebsmonat-provision.js?v=26",
   "./js/13-provisionsrechner.js?v=14",
   "./js/14-provisionswunsch.js?v=1",
   "./js/15-auswertungen.js?v=1",
@@ -67,11 +68,12 @@ const DATEIEN = [
   "./js/42-verkaeufe.js?v=17",
   "./js/43-anmeldungen-vian.js?v=19",
   "./js/44-katalog.js?v=20",
-  "./js/45-animationen.js?v=25",
+  "./js/45-animationen.js?v=26",
   "./js/46-datenschutz.js?v=22",
   "./js/47-sicherheit.js?v=23",
-  "./js/48-motion.js?v=25",
-  "./js/49-zaehlwerk.js?v=25"
+  "./js/48-motion.js?v=26",
+  "./js/49-zaehlwerk.js?v=26",
+  "./js/50-fenster-motion.js?v=26"
 ];
 
 self.addEventListener("install", ev=>{
