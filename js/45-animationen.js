@@ -211,6 +211,7 @@
 
   function zahlenBeleben(wurzel, erstesMal){
     if(!an() || !wurzel) return;
+    if(window.mZaehlwerk) return;        /* Update 25: Modul 49 zählt alle Zahlen hoch */
     const seite = (document.body.dataset.page || "") + "/";
     wurzel.querySelectorAll(".kpi").forEach(k=>{
       const v = k.querySelector(".kv"); if(!v) return;
@@ -550,7 +551,7 @@
         <button type="button" data-anim="ruhig" aria-pressed="${j==="ruhig"}">Dezent</button>
         <button type="button" data-anim="aus"   aria-pressed="${j==="aus"}">Aus</button>
       </div>
-      <p class="hinweis">„Volle Pulle“ bringt Seitenwellen, rollende Zahlen und
+      <p class="hinweis">„Volle Pulle“ bringt Seitenwellen, hochzählende Zahlen und
          Druckwellen auf den Knöpfen. „Dezent“ lässt nur die sanften
          Einblendungen stehen. Die Einstellung gilt nur für dieses Gerät
          und wandert mit deinem Konto mit.</p>`;
