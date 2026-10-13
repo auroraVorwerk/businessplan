@@ -104,14 +104,13 @@ function zaehlZeichnen(){
           <div class="field"><label for="zk_ort">Ort</label><input id="zk_ort"></div>
         </div>
         <div class="field"><label for="zkTel">Telefon</label><input id="zkTel" inputmode="tel"></div>
-        <div class="field"><label for="zkWieder">Wieder ansprechen im Monat</label>
-          <input id="zkWieder" type="month" value="${monatJetzt()}"></div>
+        ${wvFeld("zkWieder", "", "Wieder ansprechen")}
         <div class="field"><label for="zkNotiz">Notiz</label><input id="zkNotiz" placeholder="z. B. melden im Oktober"></div>
         <p class="err" id="zkErr" hidden></p>
       </div>
       <div class="zfuss">
         <button class="btn" id="zkZurueck">Zurück</button>
-        <button class="btn primary" id="zkSichern">In die Potenzialliste</button>
+        <button class="btn primary" id="zkSichern">Als Interessent merken</button>
       </div>`;
     document.getElementById('zkZurueck').onclick = ()=>{ z.modus = "zaehlen"; z.hinweis = ""; zaehlZeichnen(); };
     document.getElementById('zkSichern').onclick = ()=>{
@@ -121,14 +120,14 @@ function zaehlZeichnen(){
       const p = {vorname:w('zkVor'), nachname:w('zkNach'), str:w('zk_str'), hnr:w('zk_hnr'),
                  strasse:[w('zk_str'),w('zk_hnr')].filter(Boolean).join(" "),
                  plz:w('zk_plz'), ort:w('zk_ort'), telefon:w('zkTel'),
-                 potenzial:[...BESITZ], grund:w('zkNotiz') || `Angesprochen bei ${z.quelle}`,
-                 quelle:z.quelle, datum:dk(new Date())};
+                 notiz:w('zkNotiz'), quelle:z.quelle, datum:dk(new Date())};
       p.id = [p.vorname,p.nachname,p.str,p.plz].map(v=>(v||"").trim().toLowerCase()).join("|");
-      if(!potenzial.some(x=>x.id===p.id)) potenzial.push(p);
-      if(w('zkWieder')) wvSetzen(p, w('zkWieder'), p.grund);
+      const vorhanden = interessenten.findIndex(x=>x.id===p.id);
+      if(vorhanden >= 0) interessenten[vorhanden] = {...interessenten[vorhanden], ...p}; else interessenten.push(p);
+      if(w('zkWieder')) wvSetzen(p, w('zkWieder'), p.notiz || `Angesprochen bei ${z.quelle}`);
       z.gemerkt++;
       z.modus = "zaehlen";
-      z.hinweis = `${[p.vorname,p.nachname].filter(Boolean).join(" ")} steht in der Potenzialliste.`;
+      z.hinweis = `${[p.vorname,p.nachname].filter(Boolean).join(" ")} steht bei den Interessenten.`;
       saveData();
       zaehlZeichnen();
     };

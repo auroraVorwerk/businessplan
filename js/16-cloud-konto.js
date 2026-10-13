@@ -136,7 +136,7 @@ function serverJetzt(){ return Date.now() + uhrVersatz; }
 
 /* Alle Daten eines Benutzers als ein Paket */
 function dataBlob(){
-  return {entries, potenzial, empfehlungen, wiedervorlagen, papierkorb, nachtrag, verlauf, archiv, einkaeufe, inventur, settings, wunsch, fahrten, jobtickets, teamumsatz, ts:serverJetzt()};
+  return {entries, potenzial, empfehlungen, interessenten, wiedervorlagen, papierkorb, nachtrag, verlauf, archiv, einkaeufe, inventur, settings, wunsch, fahrten, jobtickets, teamumsatz, ts:serverJetzt()};
 }
 function applyData(d){
   d = entschaerfen(d);                                   // auch Sicherungsdateien und lokaler Stand
@@ -145,6 +145,7 @@ function applyData(d){
   potenzial.length = 0; ((d && d.potenzial) || []).forEach(x=>potenzial.push(x));
   empfehlungen.length = 0; ((d && d.empfehlungen) || []).forEach(x=>empfehlungen.push(x));
   wiedervorlagen.length = 0; ((d && d.wiedervorlagen) || []).forEach(x=>wiedervorlagen.push(x));
+  interessenten.length = 0; ((d && d.interessenten) || []).forEach(x=>interessenten.push(x));
   const grenze = serverJetzt() - 30*86400000;
   papierkorb.length = 0; ((d && d.papierkorb) || []).filter(x=>x.weg > grenze).forEach(x=>papierkorb.push(x));
   verlauf.length = 0;   ((d && d.verlauf)   || []).forEach(x=>verlauf.push(x));
@@ -169,6 +170,20 @@ function applyData(d){
   Object.assign(wunsch, {einkommen:0,tage:5,proAuftrag:270,quote:0}, (d && d.wunsch) || {});
   wunsch.proAuftrag = 270;
   wvUmstellen();                       // taggenaue Alt-Termine werden zu Monaten
+  interessentenUmziehen();             // Update 27: Kontakte aus der Terminierung gehören nicht in die Potenzialliste
+}
+function interessentenUmziehen(){
+  for(let i = potenzial.length - 1; i >= 0; i--){
+    const p = potenzial[i];
+    if(!p || !p.quelle || p.letzterBesuch) continue;
+    if(!["Festgebietsbegehung","Promotion","Messe"].includes(p.quelle)) continue;
+    const rec = {...p};
+    delete rec.potenzial; delete rec.gruende;
+    if(rec.grund && !rec.notiz && !/^Angesprochen bei/.test(rec.grund)) rec.notiz = rec.grund;
+    delete rec.grund;
+    if(!interessenten.some(x => x.id === rec.id)) interessenten.push(rec);
+    potenzial.splice(i, 1);
+  }
 }
 /* Der neuere Stand gewinnt – ist dort ein Bereich leer, springt der ältere ein.
    Verhindert, dass ein Teil der Daten durch einen halben Speichervorgang verschwindet. */
@@ -215,6 +230,7 @@ function mische(wolke, lokal){
   };
   nachId("potenzial", "id");
   nachId("empfehlungen", "id");
+  nachId("interessenten", "id");
   nachId("wiedervorlagen", "id");
   nachId("fahrten", "id");
 
@@ -376,7 +392,7 @@ function flushSave(){
     updates[basis+'entries/'+k] = neuE[k];
   });
   Object.keys(altE).forEach(k=>{ if(!(k in neuE)) updates[basis+'entries/'+k] = null; });
-  ["potenzial","empfehlungen","wiedervorlagen","papierkorb","nachtrag","verlauf","archiv","einkaeufe","inventur","settings","wunsch","fahrten","jobtickets","teamumsatz"].forEach(f=>{
+  ["potenzial","empfehlungen","interessenten","wiedervorlagen","papierkorb","nachtrag","verlauf","archiv","einkaeufe","inventur","settings","wunsch","fahrten","jobtickets","teamumsatz"].forEach(f=>{
     if(!gleich(blob[f], shadow[f])) updates[basis+f] = (blob[f] === undefined ? null : blob[f]);
   });
   if(Object.keys(updates).length){

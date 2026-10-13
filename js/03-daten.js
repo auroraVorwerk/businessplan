@@ -9,6 +9,7 @@ const archiv = [];         // abgesagte / nicht angetroffene Termine: {tag, h, a
 const fahrten = [];        // Fahrtenbuch: {datum, ziel, km, anlass}
 const jobtickets = {};     // {jahr: {geschrieben, manuell, qualifiziert, eigeneRegion, foerderung}}
 const teamumsatz = {};     // {jahr: {startKW: {team, einsteiger}}}
+const interessenten = [];  // Update 27: gemerkte Kontakte aus der Terminierung
 const wiedervorlagen = []; // {id, name, adresse, monat:"2026-09", notiz}
 var monday = mondayOf(new Date());
 var tagWahl = Math.min(6, (new Date().getDay()+6)%7);   // Handyansicht: welcher Tag im Planer
@@ -50,18 +51,20 @@ function insArchiv(tag, h, e, art){
 }
 const key = (day,hour) => `${day}|${hour}`;
 const toDec = t => {const [h,m]=t.split(":").map(Number); return h+m/60;};
+/* Update 27: offizielle Startzeit auf die Viertelstunde - der Block bleibt im Planer auf seiner Stunde */
+const startWert = (e,h) => (e && e.start) || (pad(h) + ":00");
 const plusTage = (dayKey,n) => { const d = fromDk(dayKey); d.setDate(d.getDate()+n); return dk(d); };
 const kurzName = e => `${(e.vorname||"").trim().charAt(0).toUpperCase()}. ${e.nachname||""}`;
 
 function label(e){
   if(e.kind==="kunde")   return {t1:kurzName(e), t2:""};
-  if(e.kind==="premium") return {t1:kurzName(e), t2:"Premium CheckIn"};
+  if(e.kind==="premium") return {t1:kurzName(e), t2:"Premium CheckIn" + (e.start ? " · " + e.start : "")};
   if(e.kind==="abholen")  return {t1:"Abholtermin", t2:kurzName(e)};
   if(e.kind==="eigenkauf"){
     const n = e.nb || {};
-    return {t1:"Eigenkauf", t2: n.umsatz ? eur(num(n.umsatz))+" €" : ""};
+    return {t1:"Eigenkauf", t2: [e.start, n.umsatz ? eur(num(n.umsatz))+" €" : ""].filter(Boolean).join(" · ")};
   }
-  if(e.kind==="meeting") return {t1:e.art, t2:`${e.von}–${e.bis}`};
+  if(e.kind==="meeting") return {t1:e.art, t2:`${e.start||e.von}–${e.bis}`};
   if(e.kind==="terminieren"){
     /* Vorne steht das Ziel, dahinter die Kurzform der Art */
     const kurz = e.quelle==="Promotion" ? "Promo"
@@ -75,8 +78,8 @@ function label(e){
     if(e.quelle==="Promotion") return {t1, t2:[e.ort, e.gebiet].filter(Boolean).join(" · ")};
     return {t1, t2:"Festgebietsbegehung"};
   }
-  if(e.kind==="privat") return {t1:"Privat", t2:e.bis?`${e.von}–${e.bis}`:""};
-  if(e.kind==="individuell") return {t1:e.titel || "Individuell", t2:e.bis?`${e.von}–${e.bis}`:""};
+  if(e.kind==="privat") return {t1:"Privat", t2:e.bis?`${e.start||e.von}–${e.bis}`:""};
+  if(e.kind==="individuell") return {t1:e.titel || "Individuell", t2:e.bis?`${e.start||e.von}–${e.bis}`:""};
   return {t1:"",t2:""};
 }
 /* Beträge: "1.250,50" -> 1250.5 */

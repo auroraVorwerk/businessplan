@@ -122,6 +122,9 @@ const opts = (arr,act) => arr.map(o=>`<button class="opt" data-${act}="${o}">${o
 const seg  = (name,vals,cur,cls="") => `<div class="seg ${cls}">${vals.map(v=>`<button type="button" data-seg="${name}" data-val="${v}" aria-pressed="${cur===v}">${v}</button>`).join("")}</div>`;
 const checks = (name,vals,cur=[],cls="") => `<div class="checks ${cls}">${vals.map(v=>`<button type="button" data-chk="${name}" data-val="${v}" aria-pressed="${cur.includes(v)}">${v}</button>`).join("")}</div>`;
 const fld = (id,lbl,val="",type="text",extra="") => `<div class="field"><label for="${id}">${lbl}</label><input id="${id}" type="${type}" value="${val??""}" ${extra}></div>`;
+/* Update 27: Startzeit im angetippten Fächer auf die Viertelstunde */
+const startSelect = (id,h,cur) => `<select id="${id}">${[0,15,30,45].map(m=>{
+  const v = pad(h)+":"+pad(m); return `<option value="${v}" ${(cur||pad(h)+":00")===v?"selected":""}>${v} Uhr</option>`; }).join("")}</select>`;
 const hourSelect = (id,cur) => `<select id="${id}">${HOURS_ASC.map(h=>`<option value="${h}" ${+cur===h?"selected":""}>${pad(h)}:00 – ${pad(h+2)}:00</option>`).join("")}</select>`;
 
 const FIELD_IDS = ["jobAnzahl","geraet","demotuecher","einheiten","umsatz","k70betrag","grund","pcDatum","abDatum",

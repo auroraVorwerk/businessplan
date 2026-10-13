@@ -40,7 +40,7 @@ function offeneAnrufe(){
       if(ab <= heute && tag >= heute)
         liste.push({art:"reminder", tag, h:+h, e,
           titel:`Termin bestätigen · ${e.vorname||""} ${e.nachname||""}`.trim(),
-          sub:`Premium CheckIn am ${fmt(fromDk(tag))} um ${pad(+h)} Uhr`});
+          sub:`Premium CheckIn am ${fmt(fromDk(tag))} um ${e.start || pad(+h)} Uhr`});
     }
   });
   return liste.sort((a,b)=> a.tag.localeCompare(b.tag));
@@ -178,7 +178,7 @@ function renderHeute(){
     const laeuft = jetztH >= h && jetztH < h + 2;      // D22
     return `<div class="tkarte${laeuft ? " laeuft" : ""}" style="--c:${c}">
       ${laeuft ? `<span class="laeuftband">läuft gerade</span>` : ""}
-      <div class="tzeit">${pad(h)}<span>–${pad(h+2)}</span></div>
+      <div class="tzeit">${e.start ? e.start : pad(h)}<span>${e.start ? " Uhr" : "–"+pad(h+2)}</span></div>
       <div class="tinfo">
         <div class="tname">${e.anrede?e.anrede+" ":""}${e.vorname||""} ${e.nachname||l.t1}</div>
         ${l.t2?`<div class="tsub">${l.t2}</div>`:""}

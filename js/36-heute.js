@@ -94,7 +94,8 @@ function renderHeute(){
     const adr = adresseVon(e);
     const laeuft = jetztH >= h && jetztH < h + 2;
     const fest = ["meeting","privat","individuell"].includes(e.kind) && e.von && e.bis;
-    const zeit = fest ? `${e.von}<i>${e.bis}</i>` : `${pad(h)}<i>–${pad(h+2)}</i>`;
+    const zeit = fest ? `${e.start||e.von}<i>${e.bis}</i>`
+               : e.start ? `${e.start}<i>Uhr</i>` : `${pad(h)}<i>–${pad(h+2)}</i>`;
     const status = e.status ? `<span class="hst ok">fertig</span>`
                  : (h + 2 <= jetztH ? `<span class="hst offen">offen</span>`
                  : (laeuft ? `<span class="hst jetzt">jetzt</span>` : ""));

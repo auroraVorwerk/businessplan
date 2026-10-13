@@ -5,7 +5,8 @@ function renderWiedervorlage(){
   if(!el) return;
   const jetzt = monatJetzt();
   const liste = wiedervorlagen.slice().sort((a,b)=>
-    (a.monat||"").localeCompare(b.monat||"") || (a.nachname||"").localeCompare(b.nachname||""));
+    wvSort(a).localeCompare(wvSort(b)) || (a.nachname||"").localeCompare(b.nachname||""));
+  const heuteT = dk(new Date());
   if(!liste.length){
     el.innerHTML = leerbox("uhr", "Noch nichts vorgemerkt",
       "Du setzt eine Wiedervorlage im Kein-Kauf-Fenster, unten in der Nachbereitung oder direkt aus der Kundenliste.",
@@ -13,8 +14,9 @@ function renderWiedervorlage(){
     return;
   }
   const gruppen = [
-    ["Überfällig",   liste.filter(w => w.monat <  jetzt)],
-    ["Diesen Monat", liste.filter(w => w.monat === jetzt)],
+    ["Überfällig",   liste.filter(w => w.tag ? w.tag < heuteT : w.monat < jetzt)],
+    ["Heute",        liste.filter(w => w.tag === heuteT)],
+    ["Diesen Monat", liste.filter(w => w.tag ? (w.tag > heuteT && w.monat === jetzt) : w.monat === jetzt)],
     ["Später",       liste.filter(w => w.monat >  jetzt)]
   ].filter(g => g[1].length);
 
@@ -23,10 +25,10 @@ function renderWiedervorlage(){
     const pot = potenzial.find(x => wvId(x) === w.id);
     const gr = (pot && pot.gruende) || [];
     const farbe = gr.length ? grundFarbe(gr[0]) : "";
-    return `<div class="pcard${farbe?" gstreif":""}${w.monat <= jetzt ? " faellig" : ""}"
+    return `<div class="pcard${farbe?" gstreif":""}${wvFaellig(w) ? " faellig" : ""}"
         ${farbe?`style="--gf:${farbe}"`:""}>
       <div class="nm">${w.vorname} ${w.nachname}
-        <span class="wieder">${monatText(w.monat)}</span></div>
+        <span class="wieder">${wvText(w)}</span></div>
       <div class="meta">${adr || "keine Adresse hinterlegt"}</div>
       ${w.telefon?`<div class="meta">${w.telefon}</div>`:""}
       ${gr.length?`<div class="gchips">${gr.map(g=>
@@ -66,8 +68,7 @@ function wvDialog(person, titel){
   const vorhanden = wvHolen(person) || {};
   simpleDialog("Wiedervorlage", titel || `${person.vorname||""} ${person.nachname||""}`.trim(),
     `<div class="grp">
-       <div class="field"><label for="wvdMonat">Wieder ansprechen im Monat</label>
-         <input id="wvdMonat" type="month" value="${vorhanden.monat||monatJetzt()}"></div>
+       ${wvFeld("wvdMonat", wvWert(vorhanden) || monatJetzt(), "Wieder ansprechen")}
        <div class="field"><label for="wvdNotiz">Notiz</label>
          <textarea id="wvdNotiz" style="min-height:70px">${vorhanden.notiz||""}</textarea></div>
      </div>`,
@@ -90,3 +91,48 @@ function potListeNeu(){
   }, 220);
 }
 
+
+/* ---------- Update 27: Wiedervorlage als Monat oder fester Tag ----------
+   Das Feld schreibt in ein verstecktes Eingabefeld mit der alten Kennung -
+   alle bisherigen Stellen lesen dort weiter wie gewohnt. Ein Monat steht als
+   "2026-11", ein fester Tag als "2026-11-03". */
+function wvFeld(id, wert, label){
+  const tag = istTagWert(wert);
+  const monat = tag ? String(wert).slice(0,7) : (wert || "");
+  return `<div class="field wvfeld" data-wvfeld="${id}"><label for="${id}_sicht">${label}</label>
+    <div class="seg wvmodus"><button type="button" data-wvm="monat" aria-pressed="${!tag}">Monat</button><button type="button" data-wvm="tag" aria-pressed="${tag}">Fester Tag</button></div>
+    <input id="${id}_sicht" class="wvm-monat" type="month" value="${monat}" ${tag ? "hidden" : ""}>
+    <input class="wvm-tag" type="date" value="${tag ? wert : ""}" ${tag ? "" : "hidden"}>
+    <input type="hidden" id="${id}" value="${wert || ""}"></div>`;
+}
+(function(){
+  const sync = box => {
+    const tag = box.querySelector('[data-wvm="tag"]').getAttribute('aria-pressed') === "true";
+    const v = tag ? box.querySelector('.wvm-tag').value : box.querySelector('.wvm-monat').value;
+    box.querySelector('input[type="hidden"]').value = v || "";
+  };
+  document.addEventListener('click', ev=>{
+    const b = ev.target.closest && ev.target.closest('.wvfeld [data-wvm]');
+    if(!b) return;
+    ev.preventDefault();
+    const box = b.closest('.wvfeld');
+    const tag = b.dataset.wvm === "tag";
+    box.querySelectorAll('[data-wvm]').forEach(x=> x.setAttribute('aria-pressed', String(x === b)));
+    const m = box.querySelector('.wvm-monat'), d = box.querySelector('.wvm-tag');
+    if(tag && !d.value){
+      const basis = m.value && m.value > monatJetzt() ? m.value + "-01" : dk(new Date());
+      d.value = basis;
+    }
+    if(!tag && !m.value && d.value) m.value = d.value.slice(0,7);
+    m.hidden = tag; d.hidden = !tag;
+    sync(box);
+  }, true);
+  document.addEventListener('input', ev=>{
+    const box = ev.target.closest && ev.target.closest('.wvfeld');
+    if(box) sync(box);
+  }, true);
+  document.addEventListener('change', ev=>{
+    const box = ev.target.closest && ev.target.closest('.wvfeld');
+    if(box) sync(box);
+  }, true);
+})();

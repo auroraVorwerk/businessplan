@@ -20,6 +20,8 @@ function wvSetzen(p, monat, notiz){
   const id = wvId(p);
   const i = wiedervorlagen.findIndex(w => w.id === id);
   if(!monat){ if(i >= 0) wiedervorlagen.splice(i,1); return; }
+  const tag = istTagWert(monat) ? monat : "";            // Update 27: fester Tag möglich
+  monat = String(monat).slice(0,7);
   const rec = {
     id, vorname:p.vorname||"", nachname:p.nachname||"",
     str:p.str||"", hnr:p.hnr||"",
@@ -27,8 +29,12 @@ function wvSetzen(p, monat, notiz){
     plz:p.plz||"", ort:p.ort||"", telefon:p.telefon||"",
     monat, notiz:(notiz||"").trim(), erstellt:dk(new Date())
   };
-  if(i >= 0) wiedervorlagen[i] = {...wiedervorlagen[i], ...rec};
-  else wiedervorlagen.push(rec);
+  if(tag) rec.tag = tag;
+  if(i >= 0){
+    const neu = {...wiedervorlagen[i], ...rec};
+    if(!tag) delete neu.tag;
+    wiedervorlagen[i] = neu;
+  } else wiedervorlagen.push(rec);
 }
 function wvLoeschen(id){
   const i = wiedervorlagen.findIndex(w => w.id === id);
@@ -73,6 +79,8 @@ function terminAusPotenzial(p, quelle){
         str:p.str||"", hnr:p.hnr||"", notiz:p.notiz||""};
       const i = empfehlungen.findIndex(x=>x.id===p.id);   // aus der Empfehlungsliste entfernen
       if(i>=0) empfehlungen.splice(i,1);
+      const j = interessenten.findIndex(x=>x.id===p.id);  // Update 27: aus den Interessenten entfernen
+      if(j>=0) interessenten.splice(j,1);
       wvLoeschen(wvId(p));                               // Potenzialeintrag bleibt, Wiedervorlage entfällt
       closeModal(); renderAll();
     }, "Termin eintragen");
@@ -144,7 +152,8 @@ function renderEmpfehlung(){
 }
 /* Kundendaten, Notiz und bei der Potenzialliste auch die Geräte ändern */
 function kontaktBearbeiten(p, liste, mitGeraeten, istNeu){
-  simpleDialog(istNeu ? (mitGeraeten ? "Person hinzufügen" : "Empfehlung hinzufügen") : "Eintrag bearbeiten",
+  const istInt = liste === interessenten;
+  simpleDialog(istNeu ? (mitGeraeten ? "Person hinzufügen" : istInt ? "Interessent hinzufügen" : "Empfehlung hinzufügen") : "Eintrag bearbeiten",
     istNeu ? "" : `${p.vorname} ${p.nachname}`,
     `<div class="grp">
        <div class="row2">
@@ -162,7 +171,7 @@ function kontaktBearbeiten(p, liste, mitGeraeten, istNeu){
          <div class="field"><label>Ort</label><input id="kb_ort" value="${p.ort||""}"></div>
        </div>
        <div class="field"><label>Telefon</label><input id="kbTel" type="tel" inputmode="tel" value="${p.telefon||""}"></div>
-       ${mitGeraeten?"":`<div class="field"><label>Empfohlen von</label><input id="kbVon" value="${p.von||""}" placeholder="Name des Kunden"></div>`}
+       ${(mitGeraeten||istInt)?"":`<div class="field"><label>Empfohlen von</label><input id="kbVon" value="${p.von||""}" placeholder="Name des Kunden"></div>`}
        ${mitGeraeten?`<div class="sect"><span class="lb">Offenes Potenzial — was fehlt dem Kunden noch?</span>
          <div class="checks stack" id="kbPot">${BESITZ.map(g=>
            `<button type="button" data-kbpot="${g}" aria-pressed="${(p.potenzial||[]).includes(g)}">${g}</button>`).join("")}</div>
@@ -171,8 +180,7 @@ function kontaktBearbeiten(p, liste, mitGeraeten, istNeu){
          <div class="checks gruende2" id="kbGrd">${NK_GRUENDE.map(g=>
            `<button type="button" data-kbgrd="${g}" aria-pressed="${(p.gruende||[]).includes(g)}">${g}</button>`).join("")}</div>
          </div>`:""}
-       <div class="field"><label for="kbWieder">Wieder ansprechen im Monat</label>
-         <input id="kbWieder" type="month" value="${(wvHolen(p)||{}).monat||""}"></div>
+       ${wvFeld("kbWieder", wvWert(wvHolen(p)), "Wieder ansprechen")}
        <div class="field"><label>Notiz</label><textarea id="kbNotiz" style="min-height:70px">${p.notiz||p.grund||""}</textarea></div>
      </div>
      <p class="err" id="kbErr" hidden></p>`,
@@ -213,10 +221,10 @@ function potKarte(p){
   const jetzt = monatJetzt();
   const gr = p.gruende || [];
   const farbe = gr.length ? grundFarbe(gr[0]) : "";
-  return `<div class="pcard${farbe?" gstreif":""}${wv && wv.monat <= jetzt ? " faellig" : ""}"
+  return `<div class="pcard${farbe?" gstreif":""}${wvFaellig(wv) ? " faellig" : ""}"
       ${farbe?`style="--gf:${farbe}"`:""}>
       <div class="nm">${p.vorname} ${p.nachname}${wv ? `<span class="wieder">${
-        wv.monat <= jetzt ? "fällig" : monatKurz(wv.monat)}</span>` : ""}</div>
+        wvFaellig(wv) ? "fällig" : wvKurz(wv)}</span>` : ""}</div>
       <div class="meta">${[p.strasse,[p.plz,p.ort].filter(Boolean).join(" ")].filter(Boolean).join(" · ")}</div>
       <div class="meta">${p.telefon?p.telefon+" · ":""}${p.letzterBesuch
         ? "Letzter Besuch: "+fmt(fromDk(p.letzterBesuch))
@@ -254,8 +262,8 @@ function renderPotenzial(){
     return [p.vorname, p.nachname, p.ort, p.strasse, p.telefon, nkText(p)]
       .join(" ").toLowerCase().includes(q);
   });
-  const wvM = p => (wvHolen(p)||{}).monat || "";
-  const rang = p => { const m = wvM(p); return m ? (m <= jetzt ? 0 : 1) : 2; };
+  const wvM = p => wvSort(wvHolen(p));
+  const rang = p => { const w = wvHolen(p); return w ? (wvFaellig(w) ? 0 : 1) : 2; };
   /* In der Teamansicht wird die Liste nur abgebildet - dort wäre eine Suche ohne Funktion */
   const suchfeld = fremdAktiv ? "" : `
     <div class="asec">

@@ -109,8 +109,7 @@ function nbForm(){
   }
   h += `<div class="h4">Wiedervorlage</div>
     <div class="grp">
-      <div class="field"><label for="wvMonat">Wieder ansprechen im Monat (freiwillig)</label>
-        <input id="wvMonat" type="month" value="${n.wvMonat||""}"></div>
+      ${wvFeld("wvMonat", n.wvMonat||"", "Wieder ansprechen (freiwillig)")}
     </div>`;
   return h;
 }

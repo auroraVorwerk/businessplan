@@ -31,6 +31,7 @@ function startEdit(e){
   draft.gebiet = e.gebiet;
   draft.bis = e.bis;
   draft.bisTag = e.bisTag;
+  draft.start = e.start;
   draft.nb = {...(e.nb||{})};
   blockZustaende();
   if(e.kind==="kunde" || e.kind==="premium"){
@@ -66,7 +67,8 @@ function infoKarte(e){
   const quelle = e.kind==="premium" ? "Premium CheckIn"
                : e.kind==="abholen" ? (e.quelle || "Gerät abholen")
                : (e.quelle || "");
-  const zeiten = e.bis ? `${e.von || pad(draft.hour)+":00"}–${e.bis} Uhr`
+  const zeiten = e.bis ? `${e.start || e.von || pad(draft.hour)+":00"}–${e.bis} Uhr`
+                       : e.start ? `${e.start} Uhr`
                        : `${pad(draft.hour)}:00–${pad((draft.hour+2)%24)}:00 Uhr`;
   let mitte = "";
   if(kunde){
@@ -263,7 +265,8 @@ function paintRoh(){
        <div class="row2 plzort"><div class="field" style="flex:0 0 42%"><label for="f_plz">PLZ</label>
          <input id="f_plz" value="${n.f_plz||""}" inputmode="numeric" maxlength="5" pattern="\\d{5}"></div>
          ${fld("f_ort","Ort",n.f_ort)}</div>
-       ${fld("f_tel","Telefonnummer (freiwillig)",n.f_tel,"tel",'inputmode="tel"')}
+       ${draft.kind==="premium" ? `<div class="field"><label for="f_start">Uhrzeit</label>${startSelect("f_start",draft.hour,draft.start)}</div>` : ""}
+       ${fld("f_tel","Telefon",n.f_tel,"tel",'inputmode="tel"')}
        <div class="field"><label for="f_notiz">Notiz zum Termin</label>
          <textarea id="f_notiz" style="min-height:70px">${n.f_notiz||""}</textarea></div>
        ${error?`<div class="err">${error}</div>`:""}
@@ -294,6 +297,10 @@ function paintRoh(){
       if(draft.nb.f_anrede) eintrag.anrede = draft.nb.f_anrede; else delete eintrag.anrede;
       if(g('f_notiz')) eintrag.notiz = g('f_notiz'); else delete eintrag.notiz;
       if(draft.quelle) eintrag.quelle = draft.quelle;
+      if(draft.kind === "premium"){
+        const st = (document.getElementById('f_start')||{}).value || "";
+        if(st && st !== pad(draft.hour)+":00") eintrag.start = st; else delete eintrag.start;
+      }
       entries[key(draft.day,draft.hour)] = eintrag;
       closeModal(); renderAll();
     };
@@ -310,7 +317,7 @@ function paintRoh(){
       `<div class="grp">
          ${fld("ivTitel","Bezeichnung",draft.titel||"","text",'placeholder="z. B. Messe, Fortbildung"')}
          <div class="row2">
-           <div class="field"><label>Von</label><div class="fixed">${von}</div></div>
+           <div class="field"><label for="f_start">Von</label>${startSelect("f_start",draft.hour,draft.start)}</div>
            <div class="field"><label for="f_bis">Bis</label><input type="time" id="f_bis" value="${bis}" step="900"></div>
          </div>
          ${fld("ivBisTag","Bis einschließlich Tag (optional)",draft.bisTag||"","date")}
@@ -326,6 +333,7 @@ function paintRoh(){
       draft.titel = document.getElementById('ivTitel').value;
       draft.bis = document.getElementById('f_bis').value;
       draft.bisTag = document.getElementById('ivBisTag').value;
+      draft.start = document.getElementById('f_start').value;
       draft.farbe = b.dataset.farbe;
       repaint();
     });
@@ -334,11 +342,13 @@ function paintRoh(){
       const b = document.getElementById('f_bis').value;
       const bisTag = document.getElementById('ivBisTag').value;
       const bDec = toDec(b)||24;
-      draft.bis = b; draft.titel = titel; draft.bisTag = bisTag; draft.farbe = farbe;
-      if(!b || bDec <= draft.hour){ error=`Die Endzeit muss nach ${von} liegen.`; paint(); return; }
+      const st = document.getElementById('f_start').value || von;
+      draft.bis = b; draft.titel = titel; draft.bisTag = bisTag; draft.farbe = farbe; draft.start = st;
+      if(!b || bDec <= toDec(st)){ error=`Die Endzeit muss nach ${st} liegen.`; paint(); return; }
       if(bisTag && bisTag < draft.day){ error="Das Enddatum liegt vor dem Termin."; paint(); return; }
       const alt = entries[key(draft.day,draft.hour)] || {};
       const eintrag = {...alt, kind:"individuell", von, bis:b, farbe};
+      if(st !== von) eintrag.start = st; else delete eintrag.start;
       if(titel) eintrag.titel = titel; else delete eintrag.titel;
       if(bisTag && bisTag > draft.day) eintrag.bisTag = bisTag; else delete eintrag.bisTag;
       entries[key(draft.day,draft.hour)] = eintrag;
@@ -364,8 +374,7 @@ function paintRoh(){
          ${checks("nkgruende",NK_GRUENDE,gr,"gruende2")}
          <div class="field" style="margin-top:14px"><label for="grund">Zusatz&nbsp;Info oder individueller Grund</label>
            <textarea id="grund">${n.grund||""}</textarea></div>
-         <div class="field"><label for="wvMonat">Rückmeldung im Monat (freiwillig)</label>
-           <input id="wvMonat" type="month" value="${n.wvMonat||""}"></div>
+         ${wvFeld("wvMonat", n.wvMonat||"", "Rückmeldung (freiwillig)")}
          <p class="hinweis">Offen bleibt: ${BESITZ.filter(b=>!has.includes(b)).join(" · ") || "–"}</p>
        </div>` : `
        <div class="grp"><p class="hinweis">Der Kunde hat bereits alles — es entsteht kein Eintrag in der Potenzialliste.</p></div>`}
@@ -439,12 +448,13 @@ function paintRoh(){
     const n = draft.nb;
     sheet.innerHTML = head("Eigenkauf") +
       `<div class="grp">
+         <div class="field"><label for="f_start">Uhrzeit</label>${startSelect("f_start",draft.hour,draft.start)}</div>
          ${zaehlZeile("einheiten","Einheiten",n.einheiten)}
          ${fld("umsatz","Bruttoumsatz €",n.umsatz,"text",'inputmode="decimal"')}
        </div>
        ${error?`<div class="err">${error}</div>`:""}
        <div class="actions"><button class="btn" data-back="kind">Zurück</button><button class="btn primary" id="save">Speichern</button></div>
-       <div class="hint">Wird als Festgebietsumsatz gewertet und fließt mit Bonus in die Provision ein.</div>`;
+`;
     wireBack(); wireSegs();
     document.getElementById('save').onclick = ()=>{
       collect();
@@ -452,9 +462,12 @@ function paintRoh(){
         error="Bitte Einheiten oder Bruttoumsatz eintragen."; repaint(); return;
       }
       const alt = entries[key(draft.day,draft.hour)] || {};
-      entries[key(draft.day,draft.hour)] = {...alt, kind:"eigenkauf", status:"stattgefunden",
+      const st = (document.getElementById('f_start')||{}).value || "";
+      const neu = {...alt, kind:"eigenkauf", status:"stattgefunden",
         nb:{verkauft:"Ja", gebiet:"Festgebiet", kundenstatus:"Bestandskunde",
             einheiten:draft.nb.einheiten||"", umsatz:draft.nb.umsatz||""}};
+      if(st && st !== pad(draft.hour)+":00") neu.start = st; else delete neu.start;
+      entries[key(draft.day,draft.hour)] = neu;
       closeModal(); renderAll();
     };
     return;
@@ -478,8 +491,16 @@ function paintRoh(){
   /* Jeder Terminierungsblock bekommt ein Ziel - direkt beim Setzen */
   if(step==="termZiel"){
     const n = draft.nb;
-    sheet.innerHTML = head("Ziel für diesen Einsatz") +
-      `<div class="grp">
+    const alt0 = entries[key(draft.day,draft.hour)] || {};
+    const vonT = `${pad(draft.hour)}:00`;
+    const bisT = draft.bis || alt0.bis || (draft.hour+2>=24 ? "00:00" : `${pad(draft.hour+2)}:00`);
+    sheet.innerHTML = head("Festgebietsbegehung") +
+      `<div class="row2">
+         <div class="field"><label>Von</label><div class="fixed">${vonT}</div></div>
+         <div class="field"><label for="f_bis">Bis wann</label><input type="time" id="f_bis" value="${bisT}" step="900"></div>
+       </div>
+       <div class="h4">Ziel</div>
+       <div class="grp">
          ${zaehlZeile("zielTermine","Termine", n.zielTermine)}
        </div>
        ${error?`<div class="err">${error}</div>`:""}
@@ -491,10 +512,19 @@ function paintRoh(){
     document.getElementById('save').onclick = ()=>{
       collect();
       const ziel = +draft.nb.zielTermine || 0;
+      const b = (document.getElementById('f_bis')||{}).value || "";
+      draft.bis = b;
       if(!ziel){ error="Bitte ein Ziel setzen — mindestens ein Termin."; repaint(); return; }
+      const bDec = b ? (toDec(b) || 24) : draft.hour + 2;
+      if(bDec <= draft.hour){ error=`Die Endzeit muss nach ${vonT} liegen.`; repaint(); return; }
+      if(coveredHours(draft.hour + 2, bDec).some(hr => entries[key(draft.day,hr)])){
+        error="In der verlängerten Zeit steht schon ein Eintrag."; repaint(); return;
+      }
       const alt = entries[key(draft.day,draft.hour)] || {};
-      entries[key(draft.day,draft.hour)] = {...alt, kind:"terminieren", quelle:"Festgebietsbegehung",
+      const neu = {...alt, kind:"terminieren", quelle:"Festgebietsbegehung",
         modus:draft.modus || alt.modus, ziel};
+      if(b && Math.abs(bDec - (draft.hour + 2)) > 0.01){ neu.von = vonT; neu.bis = b; } else { delete neu.von; delete neu.bis; }
+      entries[key(draft.day,draft.hour)] = neu;
       closeModal(); renderAll();
     };
     return;
@@ -552,21 +582,21 @@ function paintRoh(){
     const privat = draft.kind==="privat";
     sheet.innerHTML = head(privat ? "Privat" : draft.art) +
       `<div class="row2">
-         <div class="field"><label>Von</label><div class="fixed">${von}</div></div>
+         <div class="field"><label for="f_start">Von</label>${startSelect("f_start",draft.hour,draft.start)}</div>
          <div class="field"><label for="f_bis">Bis</label><input type="time" id="f_bis" value="${bis}" step="900"></div>
        </div>
        ${privat ? `${fld("prBisTag","Bis einschließlich Tag (für Urlaub, sonst leer lassen)",draft.bisTag||"","date")}` : ""}
        ${error?`<div class="err">${error}</div>`:""}
        <div class="actions"><button class="btn" data-back="${privat?"kind":"art"}">Zurück</button><button class="btn primary" id="save">Speichern</button></div>
-       <div class="hint">${privat
-         ? "Privat blockiert die Zeit nur optisch – ein Termin lässt sich trotzdem eintragen."
-         : "Startzeit ist das angeklickte Feld. Überschneidende Fächertermine werden gesperrt."}</div>`;
+`;
     wireBack();
     document.getElementById('save').onclick = ()=>{
       const b = document.getElementById('f_bis').value;
       draft.bis = b;
+      const st = document.getElementById('f_start').value || von;
+      draft.start = st;
       const bDec = toDec(b)||24;
-      if(!b || bDec <= draft.hour){ error=`Die Endzeit muss nach ${von} liegen.`; paint(); return; }
+      if(!b || bDec <= toDec(st)){ error=`Die Endzeit muss nach ${st} liegen.`; paint(); return; }
       const bisTagEl = document.getElementById('prBisTag');
       const bisTag = bisTagEl ? bisTagEl.value : "";
       if(bisTag && bisTag < draft.day){ error="Das Enddatum liegt vor dem Termin."; draft.bisTag=bisTag; paint(); return; }
@@ -576,6 +606,7 @@ function paintRoh(){
       }
       const alt = entries[key(draft.day,draft.hour)] || {};
       const eintrag = {...alt, kind:draft.kind, von, bis:b};
+      if(st !== von) eintrag.start = st; else delete eintrag.start;
       if(draft.art) eintrag.art = draft.art; else delete eintrag.art;
       if(bisTag && bisTag > draft.day) eintrag.bisTag = bisTag; else delete eintrag.bisTag;
       entries[key(draft.day,draft.hour)] = eintrag;

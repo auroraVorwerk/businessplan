@@ -87,7 +87,7 @@ function renderKunden(){
       return `<div class="pcard kcard${r.kunde?" istkunde":""}">
         <div class="nm">${r.anrede?r.anrede+" ":""}${r.vorname} ${r.nachname}
           ${r.kunde?`<span class="wieder">Kunde</span>`:""}
-          ${wvHolen(r)?`<span class="wieder">${monatKurz(wvHolen(r).monat)}</span>`:""}</div>
+          ${wvHolen(r)?`<span class="wieder">${wvKurz(wvHolen(r))}</span>`:""}</div>
         <div class="meta">${[r.strasse,[r.plz,r.ort].filter(Boolean).join(" ")].filter(Boolean).join(" · ")}</div>
         <div class="meta">${r.telefon?r.telefon+" · ":""}${r.termine.length} Termin${r.termine.length>1?"e":""}
           · zuletzt ${fmt(fromDk(r.letzterTermin))}</div>

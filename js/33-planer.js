@@ -45,6 +45,10 @@ function gpBloecke(day){
     if(!e) return;
     const fest = ["meeting","privat","individuell"].includes(e.kind);
     let von = h, bis = h + 2;
+    if(!fest && e.kind === "terminieren" && e.bis){       // Update 27: länger geplante Einsätze
+      const b = toDec(e.bis); const bb = (b === 0 ? 24 : b);
+      if(bb > h + 2) bis = bb;
+    }
     if(fest){
       if(e.von) von = toDec(e.von);
       if(e.bis){ const b = toDec(e.bis); bis = (b === 0 ? 24 : b); }

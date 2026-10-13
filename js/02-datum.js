@@ -13,6 +13,14 @@ const monatText = m => { const [y,mm] = String(m||"").split("-").map(Number);
 const monatKurz = m => { const [y,mm] = String(m||"").split("-").map(Number);
   return (y && mm) ? `${MONATE[mm-1].slice(0,3)} ${String(y).slice(2)}` : ""; };
 const alsMonat = w => String(w||"").slice(0,7);
+/* Update 27: Wiedervorlage wahlweise auf einen festen Tag */
+const WT_KURZ = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+const istTagWert = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v||""));
+const wvWert = w => w ? (w.tag || w.monat || "") : "";
+const wvText = w => !w ? "" : w.tag ? `${WT_KURZ[fromDk(w.tag).getDay()]}, ${fmt(fromDk(w.tag))}` : monatText(w.monat);
+const wvKurz = w => !w ? "" : w.tag ? `${WT_KURZ[fromDk(w.tag).getDay()]} ${fmtShort(fromDk(w.tag))}` : monatKurz(w.monat);
+const wvFaellig = w => !!w && (w.tag ? w.tag <= dk(new Date()) : w.monat <= monatJetzt());
+const wvSort = w => w ? (w.tag || (w.monat + "-00")) : "";
 function mondayOf(date){const d=new Date(date);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d;}
 function isoWeek(date){
   const t=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
