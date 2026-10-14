@@ -278,47 +278,117 @@
       return {el:z, i, gruppe, titel, stand, fuss, pct: m ? +m[1] : 0, erreicht: z.classList.contains("erreicht")};
     });
   }
+  /* Medaillen-Karussell: langsam drehen, dann schnell wirbeln – mitten im
+     Wirbel wird sie zur nächsten Medaille (andere Farbe, anderes Ziel) und
+     läuft langsam weiter. Endlos, nur bei voller Animation und nur, solange
+     die Seite Ziele sichtbar ist. Tippen auf ein Ziel wirbelt sofort dorthin. */
+  const KR = { idx:-1, ziel:-1, winkel:0, phase:"langsam", t0:0, last:0, raf:0, getauscht:false, zahlAb:0 };
+  const LANGSAM = 30, HALTEN = 4800, WIRBEL = 1250, SPITZE = 1500;
+  const C = 2 * Math.PI * 84;
+  const gesicht = cls => `<div class="mgesicht ${cls}">
+      <svg class="mprog" viewBox="0 0 180 180" aria-hidden="true"><circle cx="90" cy="90" r="84" style="stroke:rgba(0,0,0,.18)"></circle>
+        <circle class="mring" cx="90" cy="90" r="84" style="stroke:rgba(255,255,255,.85);stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${C.toFixed(1)}"></circle></svg>
+      <div class="minnen"><svg class="mstern" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"></path></svg>
+        <b class="mzahl" data-keinzaehlen>0 %</b></div>
+    </div>`;
+  function funkenHtml(start){
+    return Array.from({length:16}, (_, k)=>{ const w = k / 16 * 6.283, r = 120 + (k % 3) * 26;
+      return `<i style="--x:${Math.round(Math.cos(w) * r)}px;--y:${Math.round(Math.sin(w) * r * .7)}px;animation-delay:${start + (k % 4) * 30}ms"></i>`; }).join("");
+  }
+  function zeigeProzent(held, pct){
+    held.querySelectorAll(".mzahl").forEach(b => b.textContent = zahl(pct) + " %");
+    held.querySelectorAll(".mring").forEach(c => c.style.strokeDashoffset = (C * (1 - Math.min(100, pct) / 100)).toFixed(1));
+  }
+  function medailleSetzen(held, liste, nr, mitFunken){
+    const z = liste[nr]; if(!z) return;
+    const m = METALL[nr % METALL.length];
+    held.style.setProperty("--m1", m[0]); held.style.setProperty("--m2", m[1]); held.style.setProperty("--m3", m[2]);
+    const t = held.querySelector(".mtitel");
+    if(t){
+      t.innerHTML = `<b>${esc(z.gruppe)}</b><span>${esc(z.titel)} · ${esc(z.stand)}</span>`;
+      if(mitFunken && voll()){ t.classList.remove("mneu"); void t.offsetWidth; t.classList.add("mneu"); }
+    }
+    if(mitFunken && voll()){ const f = held.querySelector(".mfunken"); if(f) f.innerHTML = funkenHtml(0); }
+    liste.forEach(x => x.el.classList.toggle("mgewaehlt", x === z));
+    KR.idx = nr; KR.zahlAb = performance.now();
+    zielWahl = z.gruppe + z.titel;
+    if(!voll()) zeigeProzent(held, z.pct);
+  }
+  function karussell(now){
+    KR.raf = requestAnimationFrame(karussell);
+    const held = document.querySelector("#ziele .mziel");
+    const halter = held && held.querySelector(".mhalter");
+    if(!halter || document.hidden || document.body.dataset.page !== "ziele" || !voll()){ KR.last = 0; return; }
+    const dt = KR.last ? Math.min(64, now - KR.last) : 16; KR.last = now;
+    if(!KR.t0) KR.t0 = now;
+    const liste = zielDaten();
+    let v = LANGSAM;
+    if(KR.phase === "langsam" && ((now - KR.t0 > HALTEN && liste.length > 1) || KR.ziel >= 0)){
+      KR.phase = "wirbel"; KR.t0 = now; KR.getauscht = false;
+    }
+    if(KR.phase === "wirbel"){
+      const p = Math.min(1, (now - KR.t0) / WIRBEL);
+      v = LANGSAM + SPITZE * Math.pow(Math.sin(Math.PI * p), 2);
+      halter.classList.add("mwirbel");
+      if(!KR.getauscht && p >= .5){
+        const nr = KR.ziel >= 0 ? KR.ziel : (KR.idx + 1) % liste.length;
+        KR.ziel = -1; KR.getauscht = true;
+        medailleSetzen(held, liste, nr, true);
+      }
+      if(p >= 1){ KR.phase = "langsam"; KR.t0 = now; halter.classList.remove("mwirbel"); }
+    }
+    KR.winkel = (KR.winkel + v * dt / 1000) % 360;
+    halter.style.transform = `rotateY(${KR.winkel.toFixed(2)}deg)`;
+    halter.classList.toggle("mhinten", Math.cos(KR.winkel * Math.PI / 180) < 0);
+    /* Zahl und Ring laufen nach dem Wechsel hoch */
+    const z = liste[KR.idx];
+    if(z){
+      const q = Math.min(1, (now - KR.zahlAb) / 1300);
+      if(q < 1 || held.dataset.mpct !== String(z.pct)){
+        zeigeProzent(held, z.pct * (1 - Math.pow(1 - q, 3)));
+        if(q >= 1) held.dataset.mpct = String(z.pct);
+      }
+    }
+  }
   function zielBuehne(){
     const box = document.getElementById("ziele");
     if(!box) return;
     const liste = zielDaten();
     if(!liste.length) return;
-    let wahl = liste.find(z => zielWahl && z.gruppe + z.titel === zielWahl);
-    if(!wahl){
+    let nr = liste.findIndex(z => zielWahl && z.gruppe + z.titel === zielWahl);
+    if(nr < 0){
       const offen = liste.filter(z => !z.erreicht);
-      wahl = (offen.length ? offen : liste).slice().sort((a,b)=> b.pct - a.pct)[0];
+      nr = liste.indexOf((offen.length ? offen : liste).slice().sort((a,b)=> b.pct - a.pct)[0]);
     }
-    const nr = liste.indexOf(wahl);
-    const m = METALL[nr % METALL.length];
     let held = box.querySelector(".mziel");
     const neu = !held;
     if(neu){ held = document.createElement("div"); held.className = "mheld mziel"; box.insertBefore(held, box.firstChild); }
-    const funken = neu ? Array.from({length:16}, (_, k)=>{ const w = k / 16 * 6.283, r = 120 + (k % 3) * 26;
-      return `<i style="--x:${Math.round(Math.cos(w) * r)}px;--y:${Math.round(Math.sin(w) * r * .7)}px;animation-delay:${1450 + (k % 4) * 30}ms"></i>`; }).join("") : "";
-    const C = 2 * Math.PI * 84;
-    held.style.setProperty("--m1", m[0]); held.style.setProperty("--m2", m[1]); held.style.setProperty("--m3", m[2]);
     held.innerHTML = `
       <div class="mmed-buehne">
         <div class="mboden"></div>
-        <div class="mhalter${neu ? "" : " mdreh"}"><div class="mmed">
+        <div class="mhalter${Math.cos(KR.winkel * Math.PI / 180) < 0 ? " mhinten" : ""}" style="transform:rotateY(${KR.winkel.toFixed(2)}deg)"><div class="mmed">
           <div class="mkante"></div><div class="mkante2"></div>
-          <div class="mgesicht">
-            <svg class="mprog" viewBox="0 0 180 180" aria-hidden="true"><circle cx="90" cy="90" r="84" style="stroke:rgba(0,0,0,.18)"></circle>
-              <circle cx="90" cy="90" r="84" style="stroke:rgba(255,255,255,.85);stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${(C*(1-Math.min(100,wahl.pct)/100)).toFixed(1)}"></circle></svg>
-            <div class="minnen"><svg class="mstern" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"></path></svg>
-              <b class="mzahl">${zahl(wahl.pct)} %</b></div>
-          </div>
+          ${gesicht("mvorne")}${gesicht("mrueck")}
         </div></div>
-        <div class="mfunken">${funken}</div>
+        <div class="mfunken">${neu ? funkenHtml(1450) : ""}</div>
       </div>
-      <div class="mtitel"><b>${esc(wahl.gruppe)}</b><span>${esc(wahl.titel)} · ${esc(wahl.stand)}</span></div>`;
+      <div class="mtitel"></div>`;
+    delete held.dataset.mpct;
+    medailleSetzen(held, liste, nr, false);
+    if(neu) KR.zahlAb = performance.now() + 900;
     liste.forEach(z=>{
-      z.el.classList.toggle("mgewaehlt", z === wahl);
       if(!z.el.dataset.mklick){
         z.el.dataset.mklick = "1";
-        z.el.addEventListener("click", ()=>{ zielWahl = z.gruppe + z.titel; sicher(zielBuehne); held.scrollIntoView({behavior:"smooth", block:"start"}); });
+        z.el.addEventListener("click", ()=>{
+          const l = zielDaten(), i = l.findIndex(x => x.el === z.el);
+          const h = box.querySelector(".mziel");
+          if(i < 0 || !h) return;
+          if(voll()) KR.ziel = i; else medailleSetzen(h, l, i, false);
+          h.scrollIntoView({behavior:"smooth", block:"start"});
+        });
       }
     });
+    if(!KR.raf) KR.raf = requestAnimationFrame(karussell);
   }
 
   /* ------------------------------------------------------------------
