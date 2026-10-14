@@ -115,7 +115,7 @@ function show(k){
   if(mk) mk.dataset.seite = PAGES[k];
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id==='page-'+k));
   document.querySelectorAll('.navlink').forEach(a=> a.dataset.page===k ? a.setAttribute('aria-current','page') : a.removeAttribute('aria-current'));
-  setMenu(false); scrollTo({top:0});
+  setMenu(false); if(scrollY) scrollTo({top:0});
 }
 /* B9: Menue laesst sich mit dem Kreuz und mit Wischen nach oben schliessen */
 const mz = document.getElementById('menueZu');
@@ -144,7 +144,8 @@ document.addEventListener('click', e=>{
   if(b) location.hash = "#" + b.dataset.leerziel;
 });
 addEventListener('hashchange', ()=> show(location.hash.slice(1)));
-addEventListener('scroll', ()=> document.getElementById('topbar').classList.toggle('scrolled', scrollY>40));
+{ const tb = document.getElementById('topbar'); let zu = null;
+  addEventListener('scroll', ()=>{ const z = scrollY > 40; if(z !== zu){ zu = z; tb.classList.toggle('scrolled', z); } }, {passive:true}); }
 
 renderAll();
 show(location.hash.slice(1) || 'heute');

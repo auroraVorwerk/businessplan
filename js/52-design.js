@@ -296,7 +296,8 @@
       return `<i style="--x:${Math.round(Math.cos(w) * r)}px;--y:${Math.round(Math.sin(w) * r * .7)}px;animation-delay:${start + (k % 4) * 30}ms"></i>`; }).join("");
   }
   function zeigeProzent(held, pct){
-    held.querySelectorAll(".mzahl").forEach(b => b.textContent = zahl(pct) + " %");
+    const t = zahl(pct) + " %";
+    held.querySelectorAll(".mzahl").forEach(b => { const k = b.firstChild; if(k && k.nodeType === 3){ if(k.nodeValue !== t) k.nodeValue = t; } else b.textContent = t; });
     held.querySelectorAll(".mring").forEach(c => c.style.strokeDashoffset = (C * (1 - Math.min(100, pct) / 100)).toFixed(1));
   }
   function medailleSetzen(held, liste, nr, mitFunken){
@@ -321,7 +322,8 @@
     if(!halter || document.hidden || document.body.dataset.page !== "ziele" || !voll()){ KR.last = 0; return; }
     const dt = KR.last ? Math.min(64, now - KR.last) : 16; KR.last = now;
     if(!KR.t0) KR.t0 = now;
-    const liste = zielDaten();
+    if(!KR.liste || !KR.liste.length || !KR.liste[0].el.isConnected) KR.liste = zielDaten();
+    const liste = KR.liste;
     let v = LANGSAM;
     if(KR.phase === "langsam" && ((now - KR.t0 > HALTEN && liste.length > 1) || KR.ziel >= 0)){
       KR.phase = "wirbel"; KR.t0 = now; KR.getauscht = false;
@@ -355,6 +357,7 @@
     if(!box) return;
     const liste = zielDaten();
     if(!liste.length) return;
+    KR.liste = liste;
     let nr = liste.findIndex(z => zielWahl && z.gruppe + z.titel === zielWahl);
     if(nr < 0){
       const offen = liste.filter(z => !z.erreicht);
@@ -458,15 +461,29 @@
     letzterTag = jetzt;
   });
   /* Glas fängt Licht: ein weicher Glanz folgt dem Finger über der Leiste */
+  /* Update 29: Maße einmal beim Antippen, Bewegung höchstens einmal pro Bild,
+     und der Glanz wird nur verschoben (transform) statt neu gemalt. */
+  let lichtZiel = null, lichtR = null, lichtXY = null, lichtTakt = 0;
+  document.addEventListener("pointerdown", ev=>{
+    const g = ev.target.closest && ev.target.closest(".tbar, .weekbar, #tagbar");
+    lichtZiel = g || null; lichtR = g ? g.getBoundingClientRect() : null;
+  }, {passive:true});
   document.addEventListener("pointermove", ev=>{
     const g = ev.target.closest && ev.target.closest(".tbar, .weekbar, #tagbar");
     if(!g) return;
-    const r = g.getBoundingClientRect();
-    g.style.setProperty("--mx", (ev.clientX - r.left) + "px");
-    g.style.setProperty("--my", (ev.clientY - r.top) + "px");
-    g.classList.add("mlicht");
+    if(g !== lichtZiel || !lichtR){ lichtZiel = g; lichtR = g.getBoundingClientRect(); }
+    lichtXY = [ev.clientX - lichtR.left, ev.clientY - lichtR.top];
+    if(lichtTakt) return;
+    lichtTakt = requestAnimationFrame(()=>{
+      lichtTakt = 0;
+      if(!lichtZiel || !lichtXY) return;
+      lichtZiel.style.setProperty("--mx", lichtXY[0] + "px");
+      lichtZiel.style.setProperty("--my", lichtXY[1] + "px");
+      lichtZiel.classList.add("mlicht");
+    });
   }, {passive:true});
-  document.addEventListener("pointerup", ()=> document.querySelectorAll(".mlicht").forEach(g=> g.classList.remove("mlicht")), {passive:true});
+  document.addEventListener("pointerup", ()=>{ lichtZiel = null; lichtR = null; document.querySelectorAll(".mlicht").forEach(g=> g.classList.remove("mlicht")); }, {passive:true});
+  document.addEventListener("pointercancel", ()=>{ lichtZiel = null; lichtR = null; document.querySelectorAll(".mlicht").forEach(g=> g.classList.remove("mlicht")); }, {passive:true});
   nachZeichnen("renderAll", ()=>{ leiser(); requestAnimationFrame(()=>{ linseSetzen(); tagLinse(); }); });
   if(typeof window.show === "function"){
     const vor = window.show;

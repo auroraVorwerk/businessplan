@@ -94,17 +94,22 @@
     if(!an() || !liste || !liste.length) return;
     const max = hoechstens || 12;
     const unten = innerHeight * 1.15;
-    [...liste].forEach((el, i)=>{
-      if(!el || !el.style) return;
-      /* Was gar nicht angezeigt wird, bleibt unberuehrt. */
-      try{
-        const r = el.getBoundingClientRect();
-        if(r.width === 0 && r.height === 0) return;
-        /* liegt der Block noch weit unten? dann erst beim Scrollen */
-        if(r.top > unten && voll() && klasse === "einlaufen"){ beobachten(el, klasse); return; }
-      }catch(e){}
-      el.classList.remove(klasse);
-      void el.offsetWidth;                       /* Lauf neu starten */
+    /* Update 29: in drei Durchgängen statt pro Element – messen, einmal
+       zurücksetzen, einmal starten. Spart dutzende Layout-Neuberechnungen. */
+    const els = [...liste].filter(el => el && el.style);
+    const rects = els.map(el => { try{ return el.getBoundingClientRect(); }catch(e){ return null; } });
+    const los = [];
+    els.forEach((el, i)=>{
+      const r = rects[i];
+      if(r && r.width === 0 && r.height === 0) return;   /* nicht angezeigt */
+      /* liegt der Block noch weit unten? dann erst beim Scrollen */
+      if(r && r.top > unten && voll() && klasse === "einlaufen"){ beobachten(el, klasse); return; }
+      los.push([el, i]);
+    });
+    if(!los.length) return;
+    los.forEach(([el]) => el.classList.remove(klasse));
+    void document.body.offsetWidth;              /* einmal: Lauf neu starten */
+    los.forEach(([el, i])=>{
       el.style.setProperty("--i", Math.min(i, max));
       el.classList.add(klasse);
       el.addEventListener("animationend", ()=>{

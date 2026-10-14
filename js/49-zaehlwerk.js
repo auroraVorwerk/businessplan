@@ -141,7 +141,10 @@
     const zahlen = zahlenIn(wurzel);
     const aktiv = stufe() !== "aus";
     const hoehe = innerHeight || 800;
-    let nr = 0;
+    /* Update 29: erst alles messen, dann schreiben. Vorher wurde zwischen
+       Messen und Schreiben gewechselt – das erzwang bei jeder Zahl eine
+       komplette Neuberechnung des Layouts. */
+    const kandidaten = [];
     zahlen.forEach(({ knoten, z }, i)=>{
       const schluessel = name + "|" + i;
       if(belegt.has(knoten)) return;           /* zählt schon - nicht dazwischenfunken */
@@ -149,9 +152,12 @@
       gemerkt.set(schluessel, z.wert);
       if(!aktiv || alt === z.wert) return;
       if(alt === undefined && z.wert === 0) return;
-      const von = alt === undefined ? 0 : alt;
-      if(nr > 120) return;
-      const r = knoten.parentElement.getBoundingClientRect();
+      if(kandidaten.length > 120) return;
+      kandidaten.push({ knoten, z, von: alt === undefined ? 0 : alt });
+    });
+    kandidaten.forEach(k => { k.r = k.knoten.parentElement.getBoundingClientRect(); });
+    let nr = 0;
+    kandidaten.forEach(({ knoten, z, von, r })=>{
       if(!r.width && !r.height) return;                       /* unsichtbar */
       if(r.top > hoehe || r.bottom < 0){
         /* erst beim Hinscrollen: bis dahin steht der Startwert da */
