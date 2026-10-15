@@ -68,7 +68,8 @@ async function renderProfil(){
              href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent("webcal://" + KALENDER_BASIS.replace(/^https?:\/\//,"") + "/kalender/" + meinFeed + ".ics")}">
             <span class="logo">${GOOGLE_LOGO}</span>Im Google Kalender abonnieren</a>
         </div>
-        <div class="actions"><button class="btn" id="pfFeedCopy">Adresse kopieren</button></div>
+        <div class="actions"><button class="btn" id="pfFeedCopy">Adresse kopieren</button>
+          <a class="btn" target="_blank" rel="noopener" href="${KALENDER_BASIS}/kalender/${meinFeed}.ics?pruefen">Kalender prüfen</a></div>
         <p class="hinweis">Passiert beim Antippen nichts, öffne diese Seite in <b>Safari</b> statt in der installierten App —
           aus der App heraus darf iOS den Kalender nicht starten. Alternativ Adresse kopieren und im Kalender
           unter „Neues Kalenderabo“ einfügen.<br>

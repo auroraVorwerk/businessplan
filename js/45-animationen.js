@@ -237,8 +237,11 @@
     if(!an() || !wurzel) return;
     const treffer = wurzel.querySelectorAll(
       ".bar > i, .balken .stab, .balken > i, .zbar > i, .fortschritt > i, .pbalken > i");
-    [...treffer].slice(0, 40).forEach((el, i)=>{
-      el.classList.remove("waechst"); void el.offsetWidth;
+    const els = [...treffer].slice(0, 40);
+    if(!els.length) return;
+    els.forEach(el => el.classList.remove("waechst"));
+    void wurzel.offsetWidth;                      /* Update 29: einmal statt pro Balken */
+    els.forEach((el, i)=>{
       el.style.setProperty("--i", Math.min(i, 14));
       el.classList.add("waechst");
       el.addEventListener("animationend", ()=>{

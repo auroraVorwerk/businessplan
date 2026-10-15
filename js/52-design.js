@@ -278,16 +278,18 @@
       return {el:z, i, gruppe, titel, stand, fuss, pct: m ? +m[1] : 0, erreicht: z.classList.contains("erreicht")};
     });
   }
-  /* Medaillen-Karussell: langsam drehen, dann schnell wirbeln – mitten im
-     Wirbel wird sie zur nächsten Medaille (andere Farbe, anderes Ziel) und
-     läuft langsam weiter. Endlos, nur bei voller Animation und nur, solange
-     die Seite Ziele sichtbar ist. Tippen auf ein Ziel wirbelt sofort dorthin. */
-  const KR = { idx:-1, ziel:-1, winkel:0, phase:"langsam", t0:0, last:0, raf:0, getauscht:false, zahlAb:0 };
-  const LANGSAM = 30, HALTEN = 4800, WIRBEL = 1250, SPITZE = 1500;
+  /* Medaillen-Karussell (Update 30)
+     Pro Wettbewerb eine Medaille: das Ziel, das am nächsten an 100 % steht.
+     Die Medaille dreht langsam, wirbelt alle paar Sekunden schnell, wird mitten
+     im Wirbel zur nächsten (andere Farbe, anderes Ziel) und dreht langsam weiter.
+     Alle Drehungen laufen als Animation auf dem Grafikchip – das Skript tauscht
+     nur einmal pro Wirbel Farbe und Text, genau im schnellsten Moment. */
+  const KR = { idx:-1, ziel:-1, timer:0, langsam:null, liste:null };
+  const HALTEN = 4600, WIRBEL = 1300;
   const C = 2 * Math.PI * 84;
   const gesicht = cls => `<div class="mgesicht ${cls}">
       <svg class="mprog" viewBox="0 0 180 180" aria-hidden="true"><circle cx="90" cy="90" r="84" style="stroke:rgba(0,0,0,.18)"></circle>
-        <circle class="mring" cx="90" cy="90" r="84" style="stroke:rgba(255,255,255,.85);stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${C.toFixed(1)}"></circle></svg>
+        <circle class="mpring" cx="90" cy="90" r="84" style="stroke:rgba(255,255,255,.85);stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${C.toFixed(1)}"></circle></svg>
       <div class="minnen"><svg class="mstern" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"></path></svg>
         <b class="mzahl" data-keinzaehlen>0 %</b></div>
     </div>`;
@@ -295,103 +297,105 @@
     return Array.from({length:16}, (_, k)=>{ const w = k / 16 * 6.283, r = 120 + (k % 3) * 26;
       return `<i style="--x:${Math.round(Math.cos(w) * r)}px;--y:${Math.round(Math.sin(w) * r * .7)}px;animation-delay:${start + (k % 4) * 30}ms"></i>`; }).join("");
   }
-  function zeigeProzent(held, pct){
-    const t = zahl(pct) + " %";
-    held.querySelectorAll(".mzahl").forEach(b => { const k = b.firstChild; if(k && k.nodeType === 3){ if(k.nodeValue !== t) k.nodeValue = t; } else b.textContent = t; });
-    held.querySelectorAll(".mring").forEach(c => c.style.strokeDashoffset = (C * (1 - Math.min(100, pct) / 100)).toFixed(1));
+  /* Je Wettbewerb (Überschrift) das Ziel mit dem höchsten Stand; erreichte
+     Ziele nur, wenn im Wettbewerb alles erreicht ist. */
+  function medaillenListe(alle){
+    const gruppen = new Map();
+    alle.forEach(z=>{ if(!gruppen.has(z.gruppe)) gruppen.set(z.gruppe, []); gruppen.get(z.gruppe).push(z); });
+    return [...gruppen.values()].map(l=>{
+      const offen = l.filter(z => !z.erreicht);
+      return (offen.length ? offen : l).slice().sort((a,b)=> b.pct - a.pct)[0];
+    });
   }
-  function medailleSetzen(held, liste, nr, mitFunken){
-    const z = liste[nr]; if(!z) return;
+  function medailleSetzen(held, z, nr, mitFunken){
+    if(!z) return;
     const m = METALL[nr % METALL.length];
     held.style.setProperty("--m1", m[0]); held.style.setProperty("--m2", m[1]); held.style.setProperty("--m3", m[2]);
+    const text = zahl(z.pct) + " %";
+    held.querySelectorAll(".mzahl").forEach(b => b.textContent = text);
+    held.querySelectorAll(".mpring").forEach(c => c.style.strokeDashoffset = (C * (1 - Math.min(100, z.pct) / 100)).toFixed(1));
     const t = held.querySelector(".mtitel");
     if(t){
       t.innerHTML = `<b>${esc(z.gruppe)}</b><span>${esc(z.titel)} · ${esc(z.stand)}</span>`;
       if(mitFunken && voll()){ t.classList.remove("mneu"); void t.offsetWidth; t.classList.add("mneu"); }
     }
     if(mitFunken && voll()){ const f = held.querySelector(".mfunken"); if(f) f.innerHTML = funkenHtml(0); }
-    liste.forEach(x => x.el.classList.toggle("mgewaehlt", x === z));
-    KR.idx = nr; KR.zahlAb = performance.now();
+    (KR.alle || []).forEach(x => x.el.classList.toggle("mgewaehlt", x === z));
     zielWahl = z.gruppe + z.titel;
-    if(!voll()) zeigeProzent(held, z.pct);
   }
-  function karussell(now){
-    KR.raf = requestAnimationFrame(karussell);
+  function wirbeln(){
+    clearTimeout(KR.timer);
     const held = document.querySelector("#ziele .mziel");
-    const halter = held && held.querySelector(".mhalter");
-    if(!halter || document.hidden || document.body.dataset.page !== "ziele" || !voll()){ KR.last = 0; return; }
-    const dt = KR.last ? Math.min(64, now - KR.last) : 16; KR.last = now;
-    if(!KR.t0) KR.t0 = now;
-    if(!KR.liste || !KR.liste.length || !KR.liste[0].el.isConnected) KR.liste = zielDaten();
-    const liste = KR.liste;
-    let v = LANGSAM;
-    if(KR.phase === "langsam" && ((now - KR.t0 > HALTEN && liste.length > 1) || KR.ziel >= 0)){
-      KR.phase = "wirbel"; KR.t0 = now; KR.getauscht = false;
+    if(!held || !KR.liste || !KR.liste.length) return;
+    const weiter = ()=>{ KR.timer = setTimeout(wirbeln, HALTEN); };
+    /* nur wenn die Seite zu sehen ist – sonst später nochmal schauen */
+    if(document.hidden || document.body.dataset.page !== "ziele" || !voll() || (KR.liste.length < 2 && KR.ziel < 0)) return weiter();
+    const nr = KR.ziel >= 0 ? KR.ziel : (KR.idx + 1) % KR.liste.length;
+    const z = KR.ziel >= 0 ? KR.zielObj : KR.liste[nr];
+    KR.ziel = -1; KR.zielObj = null;
+    /* Wirbel = dieselbe Drehung, nur kurz viel schneller. So dreht immer nur
+       ein Element – Vorder- und Rückseite bleiben sauber. */
+    const dreh = KR.langsam;
+    if(dreh && dreh.playState !== "idle"){
+      const t0 = performance.now();
+      const takt = jetzt=>{
+        const q = Math.min(1, (jetzt - t0) / WIRBEL);
+        const r = 1 + 26 * Math.pow(Math.sin(Math.PI * q), 2);
+        if(dreh.updatePlaybackRate) dreh.updatePlaybackRate(r); else dreh.playbackRate = r;
+        if(q < 1 && held.isConnected) requestAnimationFrame(takt);
+      };
+      requestAnimationFrame(takt);
     }
-    if(KR.phase === "wirbel"){
-      const p = Math.min(1, (now - KR.t0) / WIRBEL);
-      v = LANGSAM + SPITZE * Math.pow(Math.sin(Math.PI * p), 2);
-      halter.classList.add("mwirbel");
-      if(!KR.getauscht && p >= .5){
-        const nr = KR.ziel >= 0 ? KR.ziel : (KR.idx + 1) % liste.length;
-        KR.ziel = -1; KR.getauscht = true;
-        medailleSetzen(held, liste, nr, true);
-      }
-      if(p >= 1){ KR.phase = "langsam"; KR.t0 = now; halter.classList.remove("mwirbel"); }
-    }
-    KR.winkel = (KR.winkel + v * dt / 1000) % 360;
-    halter.style.transform = `rotateY(${KR.winkel.toFixed(2)}deg)`;
-    halter.classList.toggle("mhinten", Math.cos(KR.winkel * Math.PI / 180) < 0);
-    /* Zahl und Ring laufen nach dem Wechsel hoch */
-    const z = liste[KR.idx];
-    if(z){
-      const q = Math.min(1, (now - KR.zahlAb) / 1300);
-      if(q < 1 || held.dataset.mpct !== String(z.pct)){
-        zeigeProzent(held, z.pct * (1 - Math.pow(1 - q, 3)));
-        if(q >= 1) held.dataset.mpct = String(z.pct);
-      }
-    }
+    const glut = held.querySelector(".mglut");
+    if(glut && glut.animate) glut.animate([{ opacity:0 }, { opacity:.6, offset:.5 }, { opacity:0 }], { duration:WIRBEL, easing:"ease-in-out" });
+    setTimeout(()=>{ if(held.isConnected){ KR.idx = KR.liste.indexOf(z) >= 0 ? KR.liste.indexOf(z) : nr; medailleSetzen(held, z, KR.liste.indexOf(z) >= 0 ? KR.liste.indexOf(z) : nr, true); } }, WIRBEL / 2);
+    KR.timer = setTimeout(wirbeln, WIRBEL + HALTEN);
   }
   function zielBuehne(){
     const box = document.getElementById("ziele");
     if(!box) return;
-    const liste = zielDaten();
-    if(!liste.length) return;
+    const alle = zielDaten();
+    if(!alle.length) return;
+    KR.alle = alle;
+    const liste = medaillenListe(alle);
     KR.liste = liste;
     let nr = liste.findIndex(z => zielWahl && z.gruppe + z.titel === zielWahl);
-    if(nr < 0){
-      const offen = liste.filter(z => !z.erreicht);
-      nr = liste.indexOf((offen.length ? offen : liste).slice().sort((a,b)=> b.pct - a.pct)[0]);
-    }
+    if(nr < 0) nr = liste.indexOf(liste.slice().sort((a,b)=> (a.erreicht - b.erreicht) || (b.pct - a.pct))[0]);
     let held = box.querySelector(".mziel");
     const neu = !held;
     if(neu){ held = document.createElement("div"); held.className = "mheld mziel"; box.insertBefore(held, box.firstChild); }
     held.innerHTML = `
       <div class="mmed-buehne">
         <div class="mboden"></div>
-        <div class="mhalter${Math.cos(KR.winkel * Math.PI / 180) < 0 ? " mhinten" : ""}" style="transform:rotateY(${KR.winkel.toFixed(2)}deg)"><div class="mmed">
+        <div class="mglut" aria-hidden="true"></div>
+        <div class="mhalter"><div class="mmed">
           <div class="mkante"></div><div class="mkante2"></div>
           ${gesicht("mvorne")}${gesicht("mrueck")}
         </div></div>
         <div class="mfunken">${neu ? funkenHtml(1450) : ""}</div>
       </div>
       <div class="mtitel"></div>`;
-    delete held.dataset.mpct;
-    medailleSetzen(held, liste, nr, false);
-    if(neu) KR.zahlAb = performance.now() + 900;
-    liste.forEach(z=>{
+    KR.idx = nr;
+    medailleSetzen(held, liste[nr], nr, false);
+    /* langsames Drehen: endlos, gleichmäßig, vom Grafikchip */
+    const h = held.querySelector(".mhalter");
+    if(h && h.animate && voll()) KR.langsam = h.animate([{ transform:"rotateY(0deg)" }, { transform:"rotateY(360deg)" }], { duration:12000, iterations:Infinity, delay: neu ? 2000 : 0 });
+    alle.forEach(z=>{
       if(!z.el.dataset.mklick){
         z.el.dataset.mklick = "1";
         z.el.addEventListener("click", ()=>{
-          const l = zielDaten(), i = l.findIndex(x => x.el === z.el);
-          const h = box.querySelector(".mziel");
-          if(i < 0 || !h) return;
-          if(voll()) KR.ziel = i; else medailleSetzen(h, l, i, false);
-          h.scrollIntoView({behavior:"smooth", block:"start"});
+          const l = zielDaten(), x = l.find(y => y.el === z.el);
+          const hh = box.querySelector(".mziel");
+          if(!x || !hh) return;
+          const i = (KR.liste || []).findIndex(y => y.gruppe === x.gruppe);
+          if(voll()){ KR.ziel = i >= 0 ? i : 0; KR.zielObj = x; wirbeln(); }
+          else medailleSetzen(hh, x, i >= 0 ? i : 0, false);
+          hh.scrollIntoView({behavior:"smooth", block:"start"});
         });
       }
     });
-    if(!KR.raf) KR.raf = requestAnimationFrame(karussell);
+    clearTimeout(KR.timer);
+    KR.timer = setTimeout(wirbeln, neu ? HALTEN + 1500 : HALTEN);
   }
 
   /* ------------------------------------------------------------------

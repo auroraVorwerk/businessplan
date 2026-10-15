@@ -100,7 +100,7 @@ function renderInventur(){
       return `<div class="invzeile${a.top?" top":""}${a.hw?" nichtda":""}" data-such="${such}">
         ${istAdmin()?`<button type="button" class="markbox${a.top?" an":""}" data-mark="${ref}" title="Verkaufsschlager">✓</button>`:""}
         <span class="nm">${a.n}${a.hw?`<em class="hw">${a.hw}</em>`:""}</span>
-        <span class="pr">${preis(a.p)} €</span>
+        <span class="pr" data-keinzaehlen>${preis(a.p)} €</span>
         <span class="stepper">
           <button type="button" data-minus="${id}" aria-label="weniger">−</button>
           <b data-menge="${id}" data-zedit="${a.n.replace(/"/g,'&quot;')}" role="button" tabindex="0">${inventur[id]||0}</b>
@@ -339,7 +339,7 @@ function invVorschlaege(text){
   if(!treffer.length){ invVorschlagZu(); return; }
   box.innerHTML = treffer.map(t=>
     `<button type="button" class="vorschlag" data-inv="${t.n.replace(/"/g,'&quot;')}">
-       <b>${t.n}</b><span>${t.kat} · ${preis(t.p)} €</span></button>`).join("");
+       <b>${t.n}</b><span data-keinzaehlen>${t.kat} · ${preis(t.p)} €</span></button>`).join("");
   box.hidden = false;
 }
 document.addEventListener('click', ev=>{
