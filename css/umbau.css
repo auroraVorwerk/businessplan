@@ -261,3 +261,11 @@ html body .stat th, html body .stat td{border:0 !important;border-radius:0 !impo
 html body .stat thead tr:not(.grp) th:not(.vh){background:transparent !important;color:var(--muted) !important}
 html body .stat th.vh{border-radius:10px 10px 0 0 !important;border-bottom:0 !important}
 html body .stat td.sticky, html body .stat th.sticky{background:var(--bg) !important}
+
+/* Nachbereitung: Auswahlfelder über die volle Breite */
+.uwiz .nbblock:not(.uaus){display:block !important}
+.uwiz .nbinhalt{padding:0 !important;width:100% !important}
+.uwiz .sect, .uwiz .grp, .uwiz .seg{width:100% !important;box-sizing:border-box}
+.uwiz .seg{display:flex !important}
+.uwiz .seg > button{flex:1 1 0 !important;min-width:0}
+.uwiz .checks.stack{width:100%}

@@ -117,7 +117,10 @@
     kopf.innerHTML = `<div class="uwizzeile"><span>Schritt ${i + 1} von ${da.length}</span><b>${jetzt.t}</b></div>
       <div class="uwizbalken"><i style="width:${((i + 1) / da.length * 100).toFixed(0)}%"></i></div>`;
     koerper.prepend(kopf);
-    if(draft._uLetzter !== undefined && draft._uLetzter !== i) koerper.scrollTop = 0;
+    if(draft._uLetzter !== undefined && draft._uLetzter !== i && !draft.fokus){
+      /* nach repaint() setzt der Dialog die alte Scrollposition – danach nach oben */
+      requestAnimationFrame(()=>{ const k = sheet.querySelector(":scope > .sheetkoerper"); if(k) k.scrollTop = 0; });
+    }
     draft._uLetzter = i;
 
     /* Fuß: Zurück und Weiter, Abschließen erst am Ende */
@@ -230,5 +233,74 @@
       return r;
     };
     sicher(()=>{ if(me) renderMenu(); });
+  }
+})();
+
+/* =====================================================================
+   Update 31 · Verkauf ohne Einheiten = Potenzial ist Pflicht
+   Wurden nur Ersatzteile oder Zubehör verkauft (Einheiten 0), ist der
+   Kunde ein möglicher Käufer neuer Geräte. Dann muss wie beim Nichtkauf
+   erfasst werden, warum (noch) kein neues Gerät – und der Kunde landet
+   mit vollem Potenzial in der Potenzialliste.
+   ===================================================================== */
+(function(){
+  "use strict";
+  const nurTeile = n => n && n.verkauft === "Ja" && !((+n.einheiten || 0) > 0);
+  const potFertig = n => !!((n.nkgruende || []).length || (n.grund || "").trim());
+
+  if(typeof window.nbForm === "function" && typeof window.nkGrundHTML === "function"){
+    const vor = window.nbForm;
+    window.nbForm = function(){
+      let h = vor.apply(this, arguments);
+      const n = (typeof draft !== "undefined" && draft && draft.nb) || {};
+      if(nurTeile(n) && !/class="grp nkgrund"/.test(h)){
+        h += `<div class="h4">Potenzial für neue Geräte</div>
+          <p class="hinweis" style="margin-top:0">Keine Einheiten verkauft – nur Ersatzteile oder Zubehör.
+            Der Kunde kommt mit vollem Potenzial in die Potenzialliste.</p>` +
+          nkGrundHTML(n).replace("Warum nicht gekauft? (mehrfach möglich)", "Warum noch kein neues Gerät? (mehrfach möglich)");
+      }
+      return h;
+    };
+  }
+
+  /* Einheiten geändert: neu zeichnen, damit der Potenzial-Block erscheint oder verschwindet */
+  if(typeof window.paint === "function"){
+    const vor = window.paint;
+    window.paint = function(){
+      const r = vor.apply(this, arguments);
+      try{
+        sheet.querySelectorAll('[data-zplus="einheiten"],[data-zminus="einheiten"]').forEach(b=>{
+          b.addEventListener("click", ()=>{
+            const n = draft && draft.nb;
+            const hat = !!sheet.querySelector(".nkgrund");
+            if(n && n.verkauft === "Ja" && hat !== nurTeile(n)) setTimeout(()=> repaint(), 0);
+          });
+        });
+      }catch(e){}
+      return r;
+    };
+  }
+
+  if(typeof window.saveNb === "function"){
+    const vor = window.saveNb;
+    window.saveNb = function(e){
+      collect();
+      const n = draft.nb;
+      if(nurTeile(n) && !potFertig(n)){
+        error = "Nur Ersatzteile verkauft: bitte erfassen, warum noch kein neues Gerät gekauft wurde.";
+        draft.fokus = ".nkgrund";
+        repaint(); return;
+      }
+      const tag = draft.day, kopie = Object.assign({}, n);
+      const vorher = e.status;
+      const r = vor.apply(this, arguments);
+      try{
+        if(!vorher && e.status && nurTeile(kopie) && typeof addPotenzial === "function"){
+          addPotenzial(e, BESITZ.filter(b => !(kopie.besitz || []).includes(b)), kopie.grund, tag, kopie.nkgruende, kopie.wvMonat || "");
+          renderAll();
+        }
+      }catch(err){ console.warn("Potenzial:", err); }
+      return r;
+    };
   }
 })();

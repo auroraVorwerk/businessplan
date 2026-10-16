@@ -42,7 +42,9 @@
     const rest = Math.max(0, Math.round((ende - jetzt) / TAG));
     const betrag = +z.betrag;
     const fehlt = Math.max(0, betrag - summe);
-    const wochen = Math.max(1, rest / 7);
+    /* Update 31: eingetragener Urlaub zählt nicht als Arbeitszeit */
+    const frei = typeof window.urlaubWerktage === "function" && rest > 0 ? window.urlaubWerktage(dk(jetzt), z.bis) : 0;
+    const wochen = Math.max(1, rest / 7 - frei / 5);
     const prognose = summe / vorbei * gesamtTage;
     return {
       summe, betrag, fehlt, rest, monate,

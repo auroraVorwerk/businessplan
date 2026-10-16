@@ -240,13 +240,19 @@
         <div class="breit"><b class="mzahl">${euro(s.um)}</b><span>Umsatz brutto</span>${delta}</div>
       </div>
       <div class="mchart">
-        <div class="msaeulen">${s.tage.map((t, i)=>{
+        <div class="msaeulen u3szene">${s.tage.map((t, i)=>{
           const ges = summen[i];
-          const teile = kat.map(([k,, f]) => t[k] ? `<i style="height:${(t[k] / ges * 100).toFixed(2)}%;background:${f}"></i>` : "").join("");
+          /* Update 31: echte 3D-Säule – Vorder- und Seitenfläche teilen sich
+             farbig nach Tätigkeit auf, der Deckel trägt die oberste Farbe */
+          let bis = 0, oben = "";
+          const stops = kat.filter(([k]) => t[k]).map(([k,, f]) => {
+            const von = bis; bis += t[k] / ges * 100; oben = f;
+            return `${f} ${von.toFixed(2)}% ${bis.toFixed(2)}%`;
+          }).join(",");
           const tag = (()=>{ const d = new Date(monday); d.setDate(d.getDate() + i); return dk(d); })();
-          return `<div class="msp${tag === heute ? " heute" : ""}" style="--mi:${i}">
+          return `<div class="msp u3sp${tag === heute ? " heute" : ""}" style="--mi:${i}">
             ${ges ? `<span class="mwert">${kurz(ges)}</span>` : ""}
-            ${ges ? `<div class="mstapel${t.plan >= ges ? " plan" : ""}" style="height:${(ges / max * 100).toFixed(1)}%">${teile}</div>` : '<div class="mstapel mleer"></div>'}</div>`;
+            ${ges ? `<div class="u3box${t.plan >= ges ? " plan" : ""}" style="height:${(ges / max * 100).toFixed(1)}%;--g:linear-gradient(to top,${stops});--oben:${oben}"><i class="u3v"></i><i class="u3s"></i><i class="u3t"></i></div>` : '<div class="u3box mleer"></div>'}</div>`;
         }).join("")}</div>
         <div class="machse" data-keinzaehlen>${tagNamen.map((t, i)=>`<span>${t}</span>`).join("")}</div>
         <div class="mlegende">${kat.map(([,n,f])=>`<span><i style="background:${f}"></i>${n}</span>`).join("")}<span class="plan"><i></i>geplant</span></div>
